@@ -1,0 +1,1330 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales & Fuel Management System</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Supabase JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style type="text/tailwindcss">
+        body { font-family: 'Kanit', sans-serif; background-color: #f8fafc; }
+        .glass { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(10px); }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        .slide-up { animation: slideUp 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .view { display: none; }
+        .view.active { display: block; }
+        .btn { @apply px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed; }
+        .btn-primary { @apply bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm hover:shadow-md; }
+        .btn-secondary { @apply bg-white text-slate-700 border border-slate-200 hover:bg-slate-50; }
+        .btn-danger { @apply bg-red-600 text-white hover:bg-red-700; }
+        .input-field { @apply w-full px-4 py-2 border border-slate-300 bg-slate-50 rounded-lg focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all; }
+        .label { @apply block text-sm font-medium text-slate-700 mb-1; }
+        .card { @apply bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden; }
+        
+        /* Toast */
+        #toast-container { position: fixed; top: 1rem; right: 1rem; z-index: 9999; display: flex; flex-direction: column; gap: 0.5rem; }
+        .toast { padding: 1rem; border-radius: 0.5rem; background: white; shadow: md; display: flex; align-items: center; gap: 0.75rem; animation: slideInRight 0.3s ease-out forwards; }
+        @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        .toast.success { border-left: 4px solid #10b981; }
+        .toast.error { border-left: 4px solid #ef4444; }
+        
+        /* Loader */
+        .loader { border: 3px solid #f3f3f3; border-top: 3px solid #4f46e5; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        #global-loader { position: fixed; inset: 0; background: rgba(255,255,255,0.8); z-index: 10000; display: none; align-items: center; justify-content: center; flex-direction: column; }
+    </style>
+</head>
+<body class="text-slate-800 antialiased h-screen flex overflow-hidden">
+
+    <!-- Global Loader -->
+    <div id="global-loader" class="backdrop-blur-sm">
+        <div class="loader mb-4" style="width: 40px; height: 40px; border-width: 4px;"></div>
+        <p class="text-indigo-600 font-medium">กำลังโหลดข้อมูล...</p>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+
+    <!-- Modals Container (Dynamic) -->
+    <div id="modal-container"></div>
+
+    <!-- Landing Page (Guest) -->
+    <div id="view-landing" class="view w-full h-full overflow-y-auto bg-gradient-to-br from-indigo-50 to-white active">
+        <nav class="glass fixed w-full top-0 z-50 border-b border-white/20">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between h-16 items-center">
+                <div class="flex items-center gap-2">
+                    <img src="logo.png" alt="KVS Distribution Center" class="h-16 w-auto">
+                </div>
+                <button onclick="openLoginModal()" class="btn btn-primary">เข้าสู่ระบบ</button>
+            </div>
+        </nav>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-32 pb-16 flex flex-col md:flex-row items-center gap-12 fade-in">
+            <div class="flex-1 space-y-6">
+                <h1 class="text-5xl font-bold leading-tight text-slate-900">
+                    ระบบรายงานทีมขายและ<br>ควบคุมค่าน้ำมัน <span class="text-indigo-600">KVS</span>
+                </h1>
+                <p class="text-lg text-slate-600">ลดความผิดพลาด เพิ่มประสิทธิภาพการทำงาน ด้วยระบบที่ออกแบบมาสำหรับทีมขายยุคใหม่ บันทึกยอดขายและค่าน้ำมันได้อย่างรวดเร็ว พร้อม Dashboard สรุปผลสำหรับผู้บริหาร</p>
+                <div class="pt-4 flex gap-4">
+                    <button onclick="openLoginModal()" class="btn btn-primary px-8 py-3 text-lg">เริ่มต้นใช้งาน</button>
+                </div>
+            </div>
+            <div class="flex-1">
+                <div class="glass p-4 rounded-3xl shadow-xl border border-white/50">
+                    <img src="hero-bg.png" alt="Dashboard Preview" class="rounded-2xl w-full h-auto shadow-sm">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- App Layout (Auth) -->
+    <div id="app-layout" class="hidden w-full h-full flex flex-col md:flex-row">
+        <!-- Sidebar (Desktop) -->
+        <aside class="hidden md:flex flex-col w-64 bg-white border-r border-slate-200 h-full">
+            <div class="p-6 border-b border-slate-100 flex items-center justify-center">
+                <img src="logo.png" alt="KVS Distribution Center" class="h-20 w-auto">
+            </div>
+            <div class="p-4 border-b border-slate-100">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold" id="user-avatar-desktop">S</div>
+                    <div>
+                        <p class="text-sm font-semibold text-slate-800" id="user-name-desktop">Name</p>
+                        <p class="text-xs text-slate-500 capitalize" id="user-role-desktop">Role</p>
+                    </div>
+                </div>
+            </div>
+            <nav class="flex-1 overflow-y-auto p-4 space-y-1" id="sidebar-nav"></nav>
+            <div class="p-4 border-t border-slate-100">
+                <button onclick="confirmLogout()" class="flex items-center gap-3 px-4 py-2 w-full text-left text-red-600 hover:bg-red-50 rounded-lg transition">
+                    <i data-lucide="log-out" class="w-5 h-5"></i>
+                    <span>ออกจากระบบ</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 flex flex-col h-full bg-slate-50 overflow-hidden relative pb-16 md:pb-0">
+            <!-- Header (Mobile) -->
+            <header class="md:hidden bg-white border-b border-slate-200 px-4 py-3 flex justify-between items-center z-10">
+                <div class="flex items-center gap-2">
+                    <img src="logo.png" alt="KVS Distribution Center" class="h-12 w-auto">
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-sm font-medium" id="user-name-mobile">Name</span>
+                    <button onclick="confirmLogout()" class="text-red-500 p-1"><i data-lucide="log-out" class="w-5 h-5"></i></button>
+                </div>
+            </header>
+
+            <!-- Views Container -->
+            <div class="flex-1 overflow-y-auto p-4 md:p-8" id="views-container">
+                
+                <!-- Dashboard View -->
+                <div id="view-dashboard" class="view fade-in">
+                    <div class="flex flex-wrap justify-between items-center mb-6 gap-4">
+                        <h2 class="text-2xl font-bold text-slate-800">Dashboard</h2>
+                        <div class="flex gap-2">
+                            <input type="month" id="dash-month" class="input-field" onchange="loadDashboardData()">
+                            <select id="dash-user" class="input-field hidden" onchange="loadDashboardData()"><option value="">-- พนักงานทั้งหมด --</option></select>
+                            <select id="dash-team" class="input-field hidden" onchange="loadDashboardData()"><option value="">-- ทีมทั้งหมด --</option></select>
+                            <button onclick="loadDashboardData()" class="btn btn-secondary btn-sm"><i data-lucide="refresh-cw" class="w-4 h-4"></i> รีเฟรช</button>
+                        </div>
+                    </div>
+                    
+                    <!-- KPI Cards -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" id="dashboard-kpis">
+                        <!-- Rendered by JS -->
+                    </div>
+
+                    <!-- Charts -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6 w-full">
+                        <div class="card p-4 min-w-0 w-full overflow-hidden">
+                            <h3 class="text-lg font-semibold mb-4">ยอดขายย้อนหลัง 7 วัน</h3>
+                            <div class="w-full">
+                                <canvas id="salesChart" style="max-height: 300px;"></canvas>
+                            </div>
+                        </div>
+                        <div class="card p-4 min-w-0 w-full overflow-hidden">
+                            <h3 class="text-lg font-semibold mb-4">ค่าใช้จ่ายน้ำมันเทียบระยะทาง</h3>
+                            <div class="w-full">
+                                <canvas id="fuelChart" style="max-height: 300px;"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Reports View -->
+                <div id="view-reports" class="view fade-in">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                        <h2 class="text-2xl font-bold text-slate-800">รายงานประจำวัน</h2>
+                        <div class="flex gap-2">
+                            <button onclick="exportCSV('daily_reports')" class="btn btn-secondary"><i data-lucide="download" class="w-4 h-4"></i> Export</button>
+                            <button onclick="openReportModal()" class="btn btn-primary" id="btn-add-report"><i data-lucide="plus" class="w-4 h-4"></i> สร้างรายงาน</button>
+                        </div>
+                    </div>
+                    <div class="card p-4 mb-4 flex flex-wrap gap-4 items-center justify-between">
+                        <div class="flex gap-4 flex-wrap">
+                            <input type="month" id="filter-report-month" class="input-field max-w-xs" onchange="loadReports()">
+                            <select id="filter-report-user" class="input-field max-w-xs hidden" onchange="loadReports()">
+                                <option value="">-- พนักงานทั้งหมด --</option>
+                            </select>
+                            <select id="filter-report-team" class="input-field max-w-xs hidden" onchange="loadReports()">
+                                <option value="">-- ทีมทั้งหมด --</option>
+                            </select>
+                        </div>
+                        <div id="report-summary-totals" class="flex gap-4 font-bold text-slate-700 bg-indigo-50 px-4 py-2 rounded-lg border border-indigo-100">
+                            <!-- Injected by JS -->
+                        </div>
+                    </div>
+                    <div class="card overflow-x-auto">
+                        <table class="w-full text-sm text-left">
+                            <thead class="bg-slate-50 text-slate-600 border-b border-slate-200">
+                                <tr>
+                                    <th class="px-4 py-3">วันที่</th>
+                                    <th class="px-4 py-3">พนักงาน</th>
+                                    <th class="px-4 py-3">สถานะการทำงาน</th>
+                                    <th class="px-4 py-3 text-right">ยอดขาย (฿)</th>
+                                    <th class="px-4 py-3 text-right">ระยะทาง (กม.)</th>
+                                    <th class="px-4 py-3 text-center">เริ่ม - สิ้นสุด (กม.)</th>
+                                    <th class="px-4 py-3 text-center">จัดการ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-reports" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Fuel View -->
+                <div id="view-fuel" class="view fade-in">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                        <h2 class="text-2xl font-bold text-slate-800">บันทึกการเติมน้ำมัน</h2>
+                        <div class="flex gap-2">
+                            <button onclick="exportCSV('fuel_transactions')" class="btn btn-secondary"><i data-lucide="download" class="w-4 h-4"></i> Export</button>
+                            <button onclick="openFuelModal()" class="btn btn-primary" id="btn-add-fuel"><i data-lucide="plus" class="w-4 h-4"></i> บันทึกบิลน้ำมัน</button>
+                        </div>
+                    </div>
+                    <div class="card overflow-x-auto">
+                        <table class="w-full text-sm text-left">
+                            <thead class="bg-slate-50 text-slate-600 border-b border-slate-200">
+                                <tr>
+                                    <th class="px-4 py-3">วันที่</th>
+                                    <th class="px-4 py-3">พนักงาน</th>
+                                    <th class="px-4 py-3">รถที่ใช้</th>
+                                    <th class="px-4 py-3 text-right">จำนวนลิตร</th>
+                                    <th class="px-4 py-3 text-right">จำนวนเงิน (฿)</th>
+                                    <th class="px-4 py-3 text-center">ใบเสร็จ</th>
+                                    <th class="px-4 py-3 text-center">จัดการ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-fuel" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Users View (Admin) -->
+                <div id="view-users" class="view fade-in">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-bold text-slate-800">จัดการผู้ใช้งาน</h2>
+                        <button onclick="openUserModal()" class="btn btn-primary"><i data-lucide="plus" class="w-4 h-4"></i> เพิ่มผู้ใช้งาน</button>
+                    </div>
+                    <div class="card overflow-x-auto">
+                        <table class="w-full text-sm text-left">
+                            <thead class="bg-slate-50 text-slate-600 border-b border-slate-200">
+                                <tr>
+                                    <th class="px-4 py-3">ชื่อ-สกุล</th>
+                                    <th class="px-4 py-3">Username</th>
+                                    <th class="px-4 py-3">บทบาท</th>
+                                    <th class="px-4 py-3">ทีม/รถ</th>
+                                    <th class="px-4 py-3 text-center">สถานะ</th>
+                                    <th class="px-4 py-3 text-center">จัดการ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-users" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Master View (Admin) -->
+                <div id="view-master" class="view fade-in">
+                    <h2 class="text-2xl font-bold text-slate-800 mb-6">ข้อมูลหลัก (Master Data)</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Teams -->
+                        <div class="card p-4">
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="text-lg font-semibold">รายชื่อทีม</h3>
+                                <button onclick="openTeamModal()" class="btn btn-secondary btn-sm"><i data-lucide="plus" class="w-4 h-4"></i> เพิ่ม</button>
+                            </div>
+                            <ul id="list-teams" class="divide-y divide-slate-100 border border-slate-100 rounded-lg"></ul>
+                        </div>
+                        <!-- Vehicles -->
+                        <div class="card p-4">
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="text-lg font-semibold">รายชื่อรถยนต์</h3>
+                                <button onclick="openVehicleModal()" class="btn btn-secondary btn-sm"><i data-lucide="plus" class="w-4 h-4"></i> เพิ่ม</button>
+                            </div>
+                            <ul id="list-vehicles" class="divide-y divide-slate-100 border border-slate-100 rounded-lg"></ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Audit View (Admin) -->
+                <div id="view-audit" class="view fade-in">
+                    <h2 class="text-2xl font-bold text-slate-800 mb-6">ประวัติการใช้งาน (Audit Logs)</h2>
+                    <div class="card overflow-x-auto">
+                        <table class="w-full text-sm text-left">
+                            <thead class="bg-slate-50 text-slate-600 border-b border-slate-200">
+                                <tr>
+                                    <th class="px-4 py-3">วันเวลา</th>
+                                    <th class="px-4 py-3">ผู้กระทำ</th>
+                                    <th class="px-4 py-3">การกระทำ</th>
+                                    <th class="px-4 py-3">ตาราง</th>
+                                    <th class="px-4 py-3">รายละเอียด</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-audit" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+                
+            </div>
+            
+            <!-- Bottom Navigation (Mobile) -->
+            <nav class="md:hidden fixed bottom-0 w-full bg-white border-t border-slate-200 z-50 px-2 pb-safe" id="bottom-nav">
+                <div class="flex justify-around items-center h-16" id="bottom-nav-links">
+                    <!-- Rendered by JS -->
+                </div>
+            </nav>
+            
+            <!-- Admin Overlay Menu (Mobile) -->
+            <div id="admin-mobile-menu" class="fixed inset-0 bg-black/50 z-40 hidden flex-col justify-end">
+                <div class="bg-white rounded-t-3xl p-6 slide-up">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-lg font-bold">เมนูจัดการระบบ</h3>
+                        <button onclick="toggleAdminMenu()" class="p-2 bg-slate-100 rounded-full"><i data-lucide="x" class="w-5 h-5"></i></button>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4" id="admin-menu-grid">
+                        <!-- Rendered by JS -->
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Core Application Logic -->
+    <script>
+        // ==========================================
+        // 1. Config & State
+        // ==========================================
+        // IMPORTANT: Replace with your Supabase URL & Anon Key
+        const SUPABASE_URL = 'https://mwgdyohrmhijaoepprjg.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_c2Q5vp9IO8iVU8jmmcZ6Xg_pp79WT6y';
+        
+        let dbClient = null;
+        if (SUPABASE_URL && SUPABASE_URL.startsWith('http')) {
+            dbClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        }
+
+        const appState = {
+            user: null,
+            currentView: 'landing',
+            data: {
+                users: [],
+                teams: [],
+                vehicles: [],
+                reports: [],
+                fuels: []
+            },
+            charts: {
+                sales: null,
+                fuel: null
+            }
+        };
+
+        const ROLES = {
+            ADMIN: 'admin',
+            EXEC: 'executive',
+            SUP: 'supervisor',
+            SALES: 'sales'
+        };
+
+        const MENU_ITEMS = [
+            { id: 'dashboard', icon: 'layout-dashboard', label: 'Dashboard', roles: [ROLES.ADMIN, ROLES.EXEC, ROLES.SUP, ROLES.SALES] },
+            { id: 'reports', icon: 'file-text', label: 'รายงานยอดขาย', roles: [ROLES.ADMIN, ROLES.SUP, ROLES.SALES] },
+            { id: 'fuel', icon: 'fuel', label: 'บันทึกน้ำมัน', roles: [ROLES.ADMIN, ROLES.SUP, ROLES.SALES] },
+            { id: 'users', icon: 'users', label: 'จัดการผู้ใช้', roles: [ROLES.ADMIN] },
+            { id: 'master', icon: 'database', label: 'ข้อมูลหลัก', roles: [ROLES.ADMIN] },
+            { id: 'audit', icon: 'history', label: 'ประวัติระบบ', roles: [ROLES.ADMIN] },
+        ];
+
+        // ==========================================
+        // 2. Utility Functions
+        // ==========================================
+        function showLoader() { document.getElementById('global-loader').style.display = 'flex'; }
+        function hideLoader() { document.getElementById('global-loader').style.display = 'none'; }
+        
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            const icon = type === 'success' ? 'check-circle' : 'alert-circle';
+            const color = type === 'success' ? 'text-emerald-500' : 'text-red-500';
+            toast.innerHTML = `<i data-lucide="${icon}" class="${color}"></i><span>${message}</span>`;
+            container.appendChild(toast);
+            lucide.createIcons();
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        async function hashPassword(password) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(password);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        function formatNumber(num) { return Number(num).toLocaleString('th-TH', { maximumFractionDigits: 2 }); }
+        function formatDate(dateStr) { if(!dateStr) return '-'; return new Date(dateStr).toLocaleDateString('th-TH'); }
+
+        async function logAudit(action, tableName, recordId, detail) {
+            if(!dbClient || !appState.user) return;
+            await dbClient.from('audit_logs').insert([{
+                action, table_name: tableName, record_id: recordId, 
+                performed_by: appState.user.id, detail
+            }]);
+        }
+
+        async function compressImage(file) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.src = event.target.result;
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        const MAX_WIDTH = 1024;
+                        const scaleSize = MAX_WIDTH / img.width;
+                        canvas.width = MAX_WIDTH;
+                        canvas.height = img.height * scaleSize;
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        canvas.toBlob((blob) => {
+                            resolve(new File([blob], file.name, { type: 'image/jpeg' }));
+                        }, 'image/jpeg', 0.7);
+                    };
+                };
+            });
+        }
+
+        async function uploadImage(file, path) {
+            if(!dbClient) return null;
+            const compressed = await compressImage(file);
+            const fileName = `${path}/${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
+            const { data, error } = await dbClient.storage.from('img').upload(fileName, compressed);
+            if(error) { showToast('Upload รูปภาพล้มเหลว', 'error'); return null; }
+            const { data: publicUrlData } = dbClient.storage.from('img').getPublicUrl(fileName);
+            return publicUrlData.publicUrl;
+        }
+
+        // ==========================================
+        // 3. UI Navigation & Rendering
+        // ==========================================
+        function initApp() {
+            lucide.createIcons();
+            
+            // Setup Month Filter default
+            const today = new Date();
+            document.getElementById('filter-report-month').value = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}`;
+
+            const session = localStorage.getItem('autosales_session');
+            if (session && dbClient) {
+                appState.user = JSON.parse(session);
+                setupAuthenticatedUI();
+                navigate('dashboard');
+            } else {
+                navigate('landing');
+            }
+        }
+
+        function navigate(viewId) {
+            document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+            if(viewId === 'landing') {
+                document.getElementById('view-landing').classList.add('active');
+                document.getElementById('app-layout').classList.add('hidden');
+            } else {
+                document.getElementById('app-layout').classList.remove('hidden');
+                document.getElementById(`view-${viewId}`).classList.add('active');
+                appState.currentView = viewId;
+                updateMenuHighlight();
+                loadViewData(viewId);
+            }
+        }
+
+        function setupAuthenticatedUI() {
+            const user = appState.user;
+            document.getElementById('user-name-desktop').textContent = user.name;
+            document.getElementById('user-role-desktop').textContent = user.role;
+            document.getElementById('user-avatar-desktop').textContent = user.name.charAt(0).toUpperCase();
+            document.getElementById('user-name-mobile').textContent = user.name;
+
+            // Render Sidebar
+            const nav = document.getElementById('sidebar-nav');
+            nav.innerHTML = '';
+            MENU_ITEMS.filter(item => item.roles.includes(user.role)).forEach(item => {
+                nav.innerHTML += `
+                    <button onclick="navigate('${item.id}')" id="menu-${item.id}" class="flex items-center gap-3 px-4 py-3 w-full text-left rounded-lg text-slate-600 hover:bg-slate-50 transition">
+                        <i data-lucide="${item.icon}" class="w-5 h-5"></i>
+                        <span class="font-medium">${item.label}</span>
+                    </button>
+                `;
+            });
+
+            // Render Bottom Nav (Mobile)
+            const bottomNav = document.getElementById('bottom-nav-links');
+            const adminGrid = document.getElementById('admin-menu-grid');
+            bottomNav.innerHTML = '';
+            adminGrid.innerHTML = '';
+            
+            const allowedMenus = MENU_ITEMS.filter(item => item.roles.includes(user.role));
+            const primaryMenus = user.role === ROLES.ADMIN ? allowedMenus.slice(0, 2) : allowedMenus.slice(0, 4);
+            
+            primaryMenus.forEach(item => {
+                bottomNav.innerHTML += `
+                    <button onclick="navigate('${item.id}')" id="bmenu-${item.id}" class="flex flex-col items-center p-2 text-slate-500">
+                        <i data-lucide="${item.icon}" class="w-6 h-6 mb-1"></i>
+                        <span class="text-[10px]">${item.label}</span>
+                    </button>
+                `;
+            });
+
+            if (user.role === ROLES.ADMIN || user.role === ROLES.SUP) {
+                bottomNav.innerHTML += `
+                    <button onclick="toggleAdminMenu()" class="flex flex-col items-center p-2 text-indigo-600">
+                        <div class="bg-indigo-100 p-2 rounded-full -mt-4 border-4 border-white shadow-sm">
+                            <i data-lucide="menu" class="w-6 h-6"></i>
+                        </div>
+                        <span class="text-[10px] mt-1">เมนูเพิ่มเติม</span>
+                    </button>
+                `;
+                
+                allowedMenus.slice(2).forEach(item => {
+                    adminGrid.innerHTML += `
+                        <button onclick="navigate('${item.id}'); toggleAdminMenu();" class="card p-4 flex flex-col items-center justify-center gap-2 hover:bg-slate-50">
+                            <i data-lucide="${item.icon}" class="w-8 h-8 text-indigo-600"></i>
+                            <span class="text-sm font-medium">${item.label}</span>
+                        </button>
+                    `;
+                });
+            }
+
+            // Hide action buttons for Executive
+            if(user.role === ROLES.EXEC) {
+                document.getElementById('btn-add-report')?.classList.add('hidden');
+                document.getElementById('btn-add-fuel')?.classList.add('hidden');
+            }
+
+            lucide.createIcons();
+        }
+
+        function updateMenuHighlight() {
+            document.querySelectorAll('[id^="menu-"], [id^="bmenu-"]').forEach(el => {
+                el.classList.remove('bg-indigo-50', 'text-indigo-600');
+                el.classList.add('text-slate-600');
+                if(el.id.includes('bmenu-')) el.classList.add('text-slate-500');
+            });
+            const dMenu = document.getElementById(`menu-${appState.currentView}`);
+            if(dMenu) {
+                dMenu.classList.add('bg-indigo-50', 'text-indigo-600');
+                dMenu.classList.remove('text-slate-600');
+            }
+            const bMenu = document.getElementById(`bmenu-${appState.currentView}`);
+            if(bMenu) {
+                bMenu.classList.add('text-indigo-600');
+                bMenu.classList.remove('text-slate-500');
+            }
+        }
+
+        function toggleAdminMenu() {
+            const menu = document.getElementById('admin-mobile-menu');
+            menu.classList.toggle('hidden');
+            menu.classList.toggle('flex');
+        }
+
+        // ==========================================
+        // 4. Data Loading & View Render
+        // ==========================================
+        async function loadViewData(viewId) {
+            if(!dbClient) return showToast('Database not connected. Please check config.', 'error');
+            
+            showLoader();
+            try {
+                if(viewId === 'dashboard') await loadDashboardData();
+                if(viewId === 'reports') await loadReports();
+                if(viewId === 'fuel') await loadFuels();
+                if(viewId === 'users' && appState.user.role === ROLES.ADMIN) await loadUsers();
+                if(viewId === 'master' && appState.user.role === ROLES.ADMIN) await loadMasterData();
+                if(viewId === 'audit' && appState.user.role === ROLES.ADMIN) await loadAudit();
+            } catch(e) {
+                console.error(e);
+                showToast('เกิดข้อผิดพลาดในการโหลดข้อมูล', 'error');
+            }
+            hideLoader();
+        }
+
+        function getBaseQuery(table) {
+            let q = dbClient.from(table).select('*, users!inner(name, team_id)');
+            if (appState.user.role === ROLES.SALES) {
+                q = q.eq('user_id', appState.user.id);
+            } else if (appState.user.role === ROLES.SUP) {
+                q = q.eq('users.team_id', appState.user.team_id);
+            }
+            return q;
+        }
+
+        // --- DASHBOARD ---
+        async function loadDashboardData() {
+            const dashUserEl = document.getElementById('dash-user');
+            const dashTeamEl = document.getElementById('dash-team');
+            const dashMonth = document.getElementById('dash-month').value;
+
+            if (appState.user.role !== ROLES.SALES) {
+                dashUserEl.classList.remove('hidden');
+                dashTeamEl.classList.remove('hidden');
+                if (dashUserEl.options.length <= 1) {
+                    const [{ data: users }, { data: teams }] = await Promise.all([
+                        dbClient.from('users').select('id, name').eq('role', 'sales'),
+                        dbClient.from('teams').select('id, team_name')
+                    ]);
+                    if (users) users.forEach(u => dashUserEl.insertAdjacentHTML('beforeend', `<option value="${u.id}">${u.name}</option>`));
+                    if (teams) teams.forEach(t => dashTeamEl.insertAdjacentHTML('beforeend', `<option value="${t.id}">${t.team_name}</option>`));
+                }
+            }
+
+            let qRep = getBaseQuery('daily_reports').order('report_date', {ascending: false});
+            let qFuel = getBaseQuery('fuel_transactions').order('fuel_date', {ascending: false});
+
+            if (dashTeamEl && dashTeamEl.value && appState.user.role !== ROLES.SALES) {
+                const { data: teamUsers } = await dbClient.from('users').select('id').eq('team_id', dashTeamEl.value);
+                const userIds = teamUsers ? teamUsers.map(u => u.id) : [];
+                if (userIds.length > 0) {
+                    qRep = qRep.in('user_id', userIds);
+                    qFuel = qFuel.in('user_id', userIds);
+                } else {
+                    qRep = qRep.eq('id', '00000000-0000-0000-0000-000000000000');
+                    qFuel = qFuel.eq('id', '00000000-0000-0000-0000-000000000000');
+                }
+            }
+            if (dashUserEl && dashUserEl.value) {
+                qRep = qRep.eq('user_id', dashUserEl.value);
+                qFuel = qFuel.eq('user_id', dashUserEl.value);
+            }
+            if (dashMonth) {
+                const parts = dashMonth.split('-');
+                const y = parseInt(parts[0], 10);
+                const m = parseInt(parts[1], 10);
+                const lastDay = new Date(y, m, 0).getDate();
+                qRep = qRep.gte('report_date', `${dashMonth}-01`).lte('report_date', `${dashMonth}-${lastDay}`);
+                qFuel = qFuel.gte('fuel_date', `${dashMonth}-01`).lte('fuel_date', `${dashMonth}-${lastDay}`);
+            } else {
+                qRep = qRep.limit(100);
+                qFuel = qFuel.limit(100);
+            }
+
+            const [{ data: reports }, { data: fuels }] = await Promise.all([qRep, qFuel]);
+            
+            let totalSales = 0, totalDist = 0, totalFuelCost = 0;
+            reports?.forEach(r => { totalSales += (r.total_sales||0); totalDist += (r.distance||0); });
+            fuels?.forEach(f => { totalFuelCost += (f.amount||0); });
+            
+            const costPerKm = totalDist > 0 ? totalFuelCost / totalDist : 0;
+            const salesPerKm = totalDist > 0 ? totalSales / totalDist : 0;
+
+            const kpiHtml = `
+                <div class="card p-4 border-l-4 border-indigo-500">
+                    <p class="text-sm text-slate-500">ยอดขายรวม</p>
+                    <h3 class="text-2xl font-bold text-slate-800">฿${formatNumber(totalSales)}</h3>
+                </div>
+                <div class="card p-4 border-l-4 border-emerald-500">
+                    <p class="text-sm text-slate-500">ระยะทางรวม</p>
+                    <h3 class="text-2xl font-bold text-slate-800">${formatNumber(totalDist)} กม.</h3>
+                </div>
+                <div class="card p-4 border-l-4 border-amber-500">
+                    <p class="text-sm text-slate-500">ค่าน้ำมันรวม</p>
+                    <h3 class="text-2xl font-bold text-slate-800">฿${formatNumber(totalFuelCost)}</h3>
+                </div>
+                <div class="card p-4 border-l-4 border-red-500 ${costPerKm > 4 ? 'bg-red-50' : ''}">
+                    <p class="text-sm text-slate-500">ต้นทุน/กม.</p>
+                    <h3 class="text-2xl font-bold text-slate-800">฿${formatNumber(costPerKm)}</h3>
+                    ${costPerKm > 4 ? '<p class="text-xs text-red-600 mt-1"><i data-lucide="alert-triangle" class="w-3 h-3 inline"></i> สูงผิดปกติ</p>' : ''}
+                </div>
+            `;
+            document.getElementById('dashboard-kpis').innerHTML = kpiHtml;
+            lucide.createIcons();
+            
+            setTimeout(() => {
+                renderCharts(reports || [], fuels || []);
+            }, 150);
+        }
+
+        function renderCharts(reports, fuels) {
+            // Group by date for simple charts
+            const salesByDate = {};
+            reports.forEach(r => {
+                if(!salesByDate[r.report_date]) salesByDate[r.report_date] = 0;
+                salesByDate[r.report_date] += (r.total_sales||0);
+            });
+            const labels = Object.keys(salesByDate).sort().slice(-7);
+            const data = labels.map(l => salesByDate[l]);
+
+            if(appState.charts.sales) appState.charts.sales.destroy();
+            const ctx1 = document.getElementById('salesChart').getContext('2d');
+            appState.charts.sales = new Chart(ctx1, {
+                type: 'line',
+                data: { labels, datasets: [{ label: 'ยอดขาย (บาท)', data, borderColor: '#4f46e5', tension: 0.3, fill: true, backgroundColor: 'rgba(79,70,229,0.1)' }] },
+                options: { responsive: true, maintainAspectRatio: true, aspectRatio: 2 }
+            });
+
+            // Fuel Chart
+            const fuelByDate = {};
+            fuels.forEach(f => {
+                if(!fuelByDate[f.fuel_date]) fuelByDate[f.fuel_date] = 0;
+                fuelByDate[f.fuel_date] += (f.amount||0);
+            });
+            const flabels = Object.keys(fuelByDate).sort().slice(-7);
+            const fdata = flabels.map(l => fuelByDate[l]);
+
+            if(appState.charts.fuel) appState.charts.fuel.destroy();
+            const ctx2 = document.getElementById('fuelChart').getContext('2d');
+            appState.charts.fuel = new Chart(ctx2, {
+                type: 'bar',
+                data: { labels: flabels, datasets: [{ label: 'ค่าน้ำมัน (บาท)', data: fdata, backgroundColor: '#f59e0b', borderRadius: 4 }] },
+                options: { responsive: true, maintainAspectRatio: true, aspectRatio: 2 }
+            });
+        }
+
+        // --- REPORTS ---
+        async function loadReports() {
+            const month = document.getElementById('filter-report-month').value; // YYYY-MM
+            const userFilterEl = document.getElementById('filter-report-user');
+            const teamFilterEl = document.getElementById('filter-report-team');
+            
+            if (appState.user.role !== ROLES.SALES) {
+                userFilterEl.classList.remove('hidden');
+                teamFilterEl.classList.remove('hidden');
+                if (userFilterEl.options.length <= 1) {
+                    const [{ data: users }, { data: teams }] = await Promise.all([
+                        dbClient.from('users').select('id, name').eq('role', 'sales'),
+                        dbClient.from('teams').select('id, team_name')
+                    ]);
+                    if (users) users.forEach(u => userFilterEl.insertAdjacentHTML('beforeend', `<option value="${u.id}">${u.name}</option>`));
+                    if (teams) teams.forEach(t => teamFilterEl.insertAdjacentHTML('beforeend', `<option value="${t.id}">${t.team_name}</option>`));
+                }
+            }
+
+            let q = getBaseQuery('daily_reports').order('report_date', {ascending: false});
+            
+            if (teamFilterEl && teamFilterEl.value && appState.user.role !== ROLES.SALES) {
+                const { data: teamUsers } = await dbClient.from('users').select('id').eq('team_id', teamFilterEl.value);
+                const userIds = teamUsers ? teamUsers.map(u => u.id) : [];
+                if (userIds.length > 0) q = q.in('user_id', userIds);
+                else q = q.eq('id', '00000000-0000-0000-0000-000000000000');
+            }
+            if (userFilterEl && userFilterEl.value) {
+                q = q.eq('user_id', userFilterEl.value);
+            }
+            if(month) {
+                const parts = month.split('-');
+                const y = parseInt(parts[0], 10);
+                const m = parseInt(parts[1], 10);
+                const lastDay = new Date(y, m, 0).getDate();
+                q = q.gte('report_date', `${month}-01`).lte('report_date', `${month}-${lastDay}`);
+            }
+
+            const { data } = await q;
+            appState.data.reports = data || [];
+            
+            let sumSales = 0, sumDist = 0;
+            appState.data.reports.forEach(r => { sumSales += (r.total_sales||0); sumDist += (r.distance||0); });
+            document.getElementById('report-summary-totals').innerHTML = `
+                <div>ยอดขายรวม: ฿${formatNumber(sumSales)}</div>
+                <div>ระยะทางรวม: ${formatNumber(sumDist)} กม.</div>
+            `;
+            
+            const tbody = document.getElementById('table-reports');
+            tbody.innerHTML = appState.data.reports.map(r => `
+                <tr class="hover:bg-slate-50">
+                    <td class="px-4 py-3">${formatDate(r.report_date)}</td>
+                    <td class="px-4 py-3">${r.users?.name || 'Unknown'}</td>
+                    <td class="px-4 py-3">
+                        <span class="px-2 py-1 rounded-full text-xs font-medium ${r.work_status === 'work' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'}">${r.work_status === 'work' ? 'ปฏิบัติงาน' : 'วันหยุด'}</span>
+                    </td>
+                    <td class="px-4 py-3 text-right">${r.total_sales ? formatNumber(r.total_sales) : '-'}</td>
+                    <td class="px-4 py-3 text-right">${r.distance ? formatNumber(r.distance) : '-'}</td>
+                    <td class="px-4 py-3 text-center">
+                        ${r.mileage_start ? formatNumber(r.mileage_start) : '-'} <i data-lucide="arrow-right" class="w-3 h-3 inline text-slate-400 mx-1"></i> ${r.mileage_end ? formatNumber(r.mileage_end) : '-'}
+                    </td>
+                    <td class="px-4 py-3 text-center flex justify-center gap-2">
+                        <button onclick="viewReportImage('${r.mileage_end_image}')" class="text-slate-500 hover:text-indigo-600" title="รูปไมล์"><i data-lucide="image" class="w-4 h-4"></i></button>
+                        ${(appState.user.role === ROLES.ADMIN || r.user_id === appState.user.id) ? 
+                        `<button onclick="deleteRecord('daily_reports', '${r.id}')" class="text-red-400 hover:text-red-600"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
+                    </td>
+                </tr>
+            `).join('') || `<tr><td colspan="7" class="text-center py-8 text-slate-500">ไม่พบข้อมูล</td></tr>`;
+            lucide.createIcons();
+        }
+
+        // --- FUEL ---
+        async function loadFuels() {
+            const { data } = await getBaseQuery('fuel_transactions').order('fuel_date', {ascending: false});
+            appState.data.fuels = data || [];
+            
+            const tbody = document.getElementById('table-fuel');
+            tbody.innerHTML = appState.data.fuels.map(f => {
+                const isHigh = (f.amount / f.distance > 4); // Dummy alert condition
+                return `
+                <tr class="hover:bg-slate-50 ${isHigh ? 'bg-red-50/50' : ''}">
+                    <td class="px-4 py-3">${formatDate(f.fuel_date)}</td>
+                    <td class="px-4 py-3">${f.users?.name || 'Unknown'}</td>
+                    <td class="px-4 py-3">${f.vehicle_id}</td>
+                    <td class="px-4 py-3 text-right">${formatNumber(f.liters)}</td>
+                    <td class="px-4 py-3 text-right font-medium">${formatNumber(f.amount)}</td>
+                    <td class="px-4 py-3 text-center flex justify-center gap-2">
+                        <button onclick="viewReportImage('${f.receipt_image}')" class="text-slate-500 hover:text-indigo-600" title="รูปบิล"><i data-lucide="file-text" class="w-4 h-4"></i></button>
+                        ${(appState.user.role === ROLES.ADMIN || f.user_id === appState.user.id) ? 
+                        `<button onclick="deleteRecord('fuel_transactions', '${f.id}')" class="text-red-400 hover:text-red-600"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
+                    </td>
+                </tr>
+            `}).join('') || `<tr><td colspan="7" class="text-center py-8 text-slate-500">ไม่พบข้อมูล</td></tr>`;
+            lucide.createIcons();
+        }
+
+        // --- USERS ---
+        async function loadUsers() {
+            const { data } = await dbClient.from('users').select('*, teams!fk_user_team(team_name), vehicles(license_plate)').order('created_at', {ascending: false});
+            const tbody = document.getElementById('table-users');
+            tbody.innerHTML = data.map(u => `
+                <tr class="hover:bg-slate-50">
+                    <td class="px-4 py-3">${u.name}</td>
+                    <td class="px-4 py-3">${u.username}</td>
+                    <td class="px-4 py-3 capitalize">${u.role}</td>
+                    <td class="px-4 py-3 text-xs">ทีม: ${u.teams?.team_name||'-'}<br>รถ: ${u.vehicles?.license_plate||'-'}</td>
+                    <td class="px-4 py-3 text-center">
+                        <span class="px-2 py-1 rounded-full text-xs font-medium ${u.status==='active'?'bg-emerald-100 text-emerald-700':'bg-red-100 text-red-700'}">${u.status}</span>
+                    </td>
+                    <td class="px-4 py-3 text-center">
+                        <div class="flex items-center justify-center gap-3">
+                            <button onclick="editUser('${u.id}')" class="text-indigo-600 hover:text-indigo-800" title="แก้ไข"><i data-lucide="edit" class="w-4 h-4"></i></button>
+                            <button onclick="deleteUser('${u.id}', '${u.name}')" class="text-red-500 hover:text-red-700" title="ลบผู้ใช้งาน"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        async function deleteUser(id, name) {
+            if (!confirm(`ยืนยันการลบผู้ใช้งาน "${name}" ออกจากระบบ?\n\nการดำเนินการนี้ไม่สามารถยกเลิกได้`)) return;
+            const { error } = await dbClient.from('users').delete().eq('id', id);
+            if (error) {
+                showToast(`ลบไม่สำเร็จ: ${error.message}`, 'error');
+            } else {
+                showToast(`ลบผู้ใช้งาน "${name}" เรียบร้อยแล้ว`, 'success');
+                logAudit('DELETE', 'users', id, `Deleted user: ${name}`);
+                await loadUsers();
+            }
+        }
+
+        // --- MASTER DATA ---
+        async function loadMasterData() {
+            const [{data: teams}, {data: vehicles}] = await Promise.all([
+                dbClient.from('teams').select('*').order('team_name'),
+                dbClient.from('vehicles').select('*').order('license_plate')
+            ]);
+            
+            document.getElementById('list-teams').innerHTML = teams.map(t => `
+                <li class="px-4 py-3 flex justify-between items-center">
+                    <span>${t.team_name}</span>
+                    <button onclick="deleteRecord('teams', '${t.id}')" class="text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                </li>
+            `).join('');
+            
+            document.getElementById('list-vehicles').innerHTML = vehicles.map(v => `
+                <li class="px-4 py-3 flex justify-between items-center">
+                    <div>
+                        <p class="font-medium">${v.license_plate}</p>
+                        <p class="text-xs text-slate-500">${v.vehicle_name} (${v.fuel_efficiency} km/l)</p>
+                    </div>
+                    <button onclick="deleteRecord('vehicles', '${v.id}')" class="text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                </li>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        // --- AUDIT LOG ---
+        async function loadAudit() {
+            const { data } = await dbClient.from('audit_logs').select('*, users!performed_by(name)').order('created_at', {ascending: false}).limit(50);
+            document.getElementById('table-audit').innerHTML = data.map(a => `
+                <tr class="hover:bg-slate-50 text-xs">
+                    <td class="px-4 py-3">${new Date(a.created_at).toLocaleString('th-TH')}</td>
+                    <td class="px-4 py-3">${a.users?.name || 'System'}</td>
+                    <td class="px-4 py-3 font-mono bg-slate-100 rounded px-1">${a.action}</td>
+                    <td class="px-4 py-3">${a.table_name}</td>
+                    <td class="px-4 py-3 truncate max-w-xs" title="${a.detail}">${a.detail}</td>
+                </tr>
+            `).join('');
+        }
+
+        // ==========================================
+        // 5. Modals & Forms Logic
+        // ==========================================
+        function createModal(id, title, contentHTML, submitLabel, submitFn) {
+            const container = document.getElementById('modal-container');
+            container.innerHTML = `
+                <div id="${id}" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 fade-in">
+                    <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden slide-up flex flex-col max-h-[90vh]">
+                        <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+                            <h3 class="text-lg font-bold text-slate-800">${title}</h3>
+                            <button onclick="closeModal('${id}')" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+                        </div>
+                        <div class="px-6 py-4 overflow-y-auto flex-1">
+                            <form id="${id}-form" onsubmit="${submitFn}(event)">
+                                ${contentHTML}
+                                <div class="mt-6 pt-4 border-t border-slate-100 flex justify-end gap-3">
+                                    <button type="button" onclick="closeModal('${id}')" class="btn btn-secondary">ยกเลิก</button>
+                                    <button type="submit" class="btn btn-primary" id="${id}-submit">${submitLabel}</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            `;
+            lucide.createIcons();
+        }
+
+        function closeModal(id) {
+            const modal = document.getElementById(id);
+            if(modal) {
+                modal.classList.add('opacity-0');
+                setTimeout(() => modal.remove(), 300);
+            }
+        }
+
+        function openLoginModal() {
+            createModal('loginModal', 'เข้าสู่ระบบ', `
+                <div class="space-y-4">
+                    <div><label class="label">Username</label><input type="text" id="login-user" required class="input-field" value="admin"></div>
+                    <div><label class="label">Password</label><input type="password" id="login-pass" required class="input-field" value="password123"></div>
+
+                </div>
+            `, 'Login', 'handleLogin');
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            if(!dbClient) return showToast('Demo Mode: Set URL/Key in code first.', 'error');
+            const u = document.getElementById('login-user').value;
+            const p = document.getElementById('login-pass').value;
+            
+            showLoader();
+            try {
+                const passHash = await hashPassword(p);
+                const { data: user, error } = await dbClient
+                    .from('users')
+                    .select('*, teams!fk_user_team(team_name), vehicles(license_plate)')
+                    .eq('username', u)
+                    .eq('password_hash', passHash)
+                    .eq('status', 'active')
+                    .single();
+
+                if (error) {
+                    console.error("Supabase API Error:", error);
+                    throw new Error("DB Error: " + error.message);
+                }
+                
+                if (!user) throw new Error('ชื่อผู้ใช้ หรือ รหัสผ่าน ไม่ถูกต้อง');
+                
+                localStorage.setItem('autosales_session', JSON.stringify(user));
+                appState.user = user;
+                closeModal('loginModal');
+                setupAuthenticatedUI();
+                navigate('dashboard');
+                showToast(`ยินดีต้อนรับ ${user.name}`);
+                logAudit('LOGIN', 'users', user.id, 'User logged in');
+            } catch (err) {
+                console.error("Login Exception:", err);
+                showToast(err.message, 'error');
+            }
+            hideLoader();
+        }
+
+        function confirmLogout() {
+            createModal('logoutModal', 'ยืนยันการออกจากระบบ', `
+                <p class="text-slate-600">คุณต้องการออกจากระบบใช่หรือไม่?</p>
+            `, 'ออกจากระบบ', 'handleLogout');
+            document.getElementById('logoutModal-submit').className = 'btn btn-danger';
+        }
+
+        function handleLogout(e) {
+            e.preventDefault();
+            localStorage.removeItem('autosales_session');
+            appState.user = null;
+            closeModal('logoutModal');
+            navigate('landing');
+            showToast('ออกจากระบบเรียบร้อยแล้ว');
+        }
+
+        function openReportModal() {
+            createModal('reportModal', 'สร้างรายงานประจำวัน', `
+                <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div><label class="label">วันที่</label><input type="date" id="rep-date" required class="input-field" value="${new Date().toISOString().split('T')[0]}"></div>
+                        <div><label class="label">สถานะ</label>
+                            <select id="rep-status" required class="input-field" onchange="toggleReportFields()">
+                                <option value="work">ปฏิบัติงาน</option>
+                                <option value="day_off">วันหยุด</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="rep-work-fields" class="space-y-4">
+                        <div><label class="label">พื้นที่/จังหวัด</label><input type="text" id="rep-area" class="input-field"></div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div><label class="label">ไมล์เริ่มต้น</label><input type="number" id="rep-mstart" class="input-field" oninput="calcDist()"></div>
+                            <div><label class="label">ไมล์สิ้นสุด</label><input type="number" id="rep-mend" class="input-field" oninput="calcDist()"></div>
+                        </div>
+                        <div><label class="label">รูปถ่ายไมล์สิ้นสุด</label><input type="file" id="rep-mend-img" accept="image/*" class="input-field text-sm"></div>
+                        <div><label class="label">ระยะทางรวม (กม.)</label><input type="number" id="rep-dist" readonly class="input-field bg-slate-50"></div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div><label class="label">ยอดขายรวม (บาท)</label><input type="number" id="rep-sales" class="input-field"></div>
+                            <div><label class="label">จำนวนร้านที่เยี่ยม</label><input type="number" id="rep-visited" class="input-field"></div>
+                        </div>
+                    </div>
+                    <div><label class="label">หมายเหตุ</label><textarea id="rep-note" class="input-field h-20"></textarea></div>
+                </div>
+            `, 'บันทึกรายงาน', 'submitReport');
+        }
+
+        function toggleReportFields() {
+            const status = document.getElementById('rep-status').value;
+            const fields = document.getElementById('rep-work-fields');
+            const inputs = fields.querySelectorAll('input');
+            if(status === 'day_off') {
+                fields.style.display = 'none';
+                inputs.forEach(i => i.removeAttribute('required'));
+            } else {
+                fields.style.display = 'block';
+                document.getElementById('rep-mstart').setAttribute('required', 'true');
+                document.getElementById('rep-mend').setAttribute('required', 'true');
+            }
+        }
+
+        function calcDist() {
+            const s = parseFloat(document.getElementById('rep-mstart').value || 0);
+            const e = parseFloat(document.getElementById('rep-mend').value || 0);
+            const d = e - s;
+            document.getElementById('rep-dist').value = d > 0 ? d : 0;
+            if(d < 0 && e > 0) showToast('ไมล์สิ้นสุดต้องมากกว่าไมล์เริ่มต้น', 'error');
+        }
+
+        async function submitReport(e) {
+            e.preventDefault();
+            const status = document.getElementById('rep-status').value;
+            let data = {
+                user_id: appState.user.id,
+                report_date: document.getElementById('rep-date').value,
+                work_status: status,
+                note: document.getElementById('rep-note').value,
+                approval_status: 'pending'
+            };
+
+            showLoader();
+            try {
+                if(status === 'work') {
+                    const mend = parseFloat(document.getElementById('rep-mend').value);
+                    const mstart = parseFloat(document.getElementById('rep-mstart').value);
+                    if(mend <= mstart) throw new Error('ระยะทางไม่ถูกต้อง');
+                    
+                    data.area = document.getElementById('rep-area').value;
+                    data.mileage_start = mstart;
+                    data.mileage_end = mend;
+                    data.distance = mend - mstart;
+                    data.total_sales = parseFloat(document.getElementById('rep-sales').value || 0);
+                    data.store_visited = parseInt(document.getElementById('rep-visited').value || 0);
+                    
+                    // Upload Images
+                    const fEnd = document.getElementById('rep-mend-img').files[0];
+                    if(fEnd) data.mileage_end_image = await uploadImage(fEnd, 'mileage');
+                }
+
+                const { data: res, error } = await dbClient.from('daily_reports').insert([data]).select();
+                if(error) throw error;
+                
+                await logAudit('INSERT', 'daily_reports', res[0].id, 'Created daily report');
+                showToast('บันทึกรายงานสำเร็จ');
+                closeModal('reportModal');
+                loadReports();
+            } catch(err) {
+                showToast(err.message || 'เกิดข้อผิดพลาดในการบันทึก', 'error');
+            }
+            hideLoader();
+        }
+
+        function openFuelModal() {
+            createModal('fuelModal', 'บันทึกบิลน้ำมัน', `
+                <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div><label class="label">วันที่เติม</label><input type="date" id="fuel-date" required class="input-field" value="${new Date().toISOString().split('T')[0]}"></div>
+                        <div><label class="label">เลขไมล์ตอนเติม</label><input type="number" id="fuel-mileage" required class="input-field"></div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div><label class="label">จำนวนเงิน (บาท)</label><input type="number" id="fuel-amount" required class="input-field"></div>
+                        <div><label class="label">จำนวนลิตร</label><input type="number" step="0.01" id="fuel-liters" required class="input-field"></div>
+                    </div>
+                    <div><label class="label">รูปถ่ายใบเสร็จ</label><input type="file" id="fuel-receipt" accept="image/*" class="input-field" required></div>
+                    <div><label class="label">หมายเหตุ</label><textarea id="fuel-note" class="input-field h-20"></textarea></div>
+                </div>
+            `, 'บันทึก', 'submitFuel');
+        }
+
+        async function submitFuel(e) {
+            e.preventDefault();
+            if(!appState.user.vehicle_id) return showToast('คุณยังไม่ได้ผูกข้อมูลรถยนต์ กรุณาติดต่อ Admin', 'error');
+            showLoader();
+            try {
+                const file = document.getElementById('fuel-receipt').files[0];
+                const imgUrl = await uploadImage(file, 'receipts');
+                if(!imgUrl) throw new Error('Upload รูปไม่สำเร็จ');
+
+                const data = {
+                    user_id: appState.user.id,
+                    vehicle_id: appState.user.vehicle_id,
+                    fuel_date: document.getElementById('fuel-date').value,
+                    mileage: parseFloat(document.getElementById('fuel-mileage').value),
+                    amount: parseFloat(document.getElementById('fuel-amount').value),
+                    liters: parseFloat(document.getElementById('fuel-liters').value),
+                    receipt_image: imgUrl,
+                    note: document.getElementById('fuel-note').value
+                };
+
+                const { data: res, error } = await dbClient.from('fuel_transactions').insert([data]).select();
+                if(error) throw error;
+                
+                await logAudit('INSERT', 'fuel_transactions', res[0].id, 'Created fuel transaction');
+                showToast('บันทึกข้อมูลน้ำมันสำเร็จ');
+                closeModal('fuelModal');
+                loadFuels();
+            } catch(err) {
+                showToast(err.message || 'บันทึกไม่สำเร็จ', 'error');
+            }
+            hideLoader();
+        }
+
+        async function deleteRecord(table, id) {
+            if(!confirm('คุณแน่ใจหรือไม่ที่จะลบข้อมูลนี้? การกระทำนี้ไม่สามารถกู้คืนได้')) return;
+            showLoader();
+            try {
+                const { error } = await dbClient.from(table).delete().eq('id', id);
+                if(error) throw error;
+                await logAudit('DELETE', table, id, 'Deleted record');
+                showToast('ลบข้อมูลสำเร็จ');
+                loadViewData(appState.currentView);
+            } catch(e) {
+                if(e.code === '23503') {
+                    showToast('ไม่สามารถลบได้ เนื่องจากข้อมูลนี้ถูกนำไปใช้งานแล้ว (เช่น มีประวัติรายงานหรือถูกกำหนดให้พนักงานอยู่)', 'error');
+                } else {
+                    showToast(e.message || 'ไม่สามารถลบข้อมูลได้', 'error');
+                }
+            }
+            hideLoader();
+        }
+
+        function viewReportImage(url) {
+            if(!url || url === 'null') return showToast('ไม่พบรูปภาพ', 'error');
+            createModal('imgModal', 'ดูรูปภาพ', `
+                <div class="flex justify-center p-4 bg-slate-50 rounded-lg">
+                    <img src="${url}" class="max-w-full h-auto rounded-lg shadow-sm" alt="Image" onerror="this.outerHTML='<p class=\\'text-red-500\\'>รูปภาพเสียหายหรือไม่สามารถโหลดได้</p>'">
+                </div>
+            `, 'ปิด', 'closeModal("imgModal"); return false;');
+            document.getElementById('imgModal-submit').classList.add('hidden');
+        }
+
+        // ==========================================
+        // 5.5 Master Data Modals (Users, Teams, Vehicles)
+        // ==========================================
+        let editId = null;
+        let editTable = null;
+
+        async function openMasterModal(table, id = null) {
+            editId = id;
+            editTable = table;
+            let data = {};
+            if(id) {
+                showLoader();
+                const res = await dbClient.from(table).select('*').eq('id', id).single();
+                data = res.data || {};
+                hideLoader();
+            }
+
+            if(table === 'users') {
+                showLoader();
+                const [{data: allTeams}, {data: allVehicles}] = await Promise.all([
+                    dbClient.from('teams').select('id, team_name'),
+                    dbClient.from('vehicles').select('id, license_plate')
+                ]);
+                hideLoader();
+                const teamOpts = (allTeams||[]).map(t => `<option value="${t.id}" ${data.team_id===t.id?'selected':''}>${t.team_name}</option>`).join('');
+                const vehOpts = (allVehicles||[]).map(v => `<option value="${v.id}" ${data.vehicle_id===v.id?'selected':''}>${v.license_plate}</option>`).join('');
+
+                createModal('masterModal', id ? 'แก้ไขผู้ใช้งาน' : 'เพิ่มผู้ใช้งาน', `
+                    <div class="space-y-4">
+                        <div><label class="label">ชื่อ-สกุล</label><input type="text" id="m-name" value="${data.name||''}" required class="input-field"></div>
+                        <div><label class="label">Username</label><input type="text" id="m-username" value="${data.username||''}" required class="input-field"></div>
+                        <div><label class="label">รหัสผ่าน ${id?'(เว้นว่างถ้าไม่เปลี่ยน)':''}</label><input type="password" id="m-pass" ${id?'':'required'} class="input-field"></div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div><label class="label">บทบาท</label>
+                                <select id="m-role" class="input-field">
+                                    <option value="sales" ${data.role=='sales'?'selected':''}>พนักงานขาย</option>
+                                    <option value="supervisor" ${data.role=='supervisor'?'selected':''}>หัวหน้าทีม</option>
+                                    <option value="admin" ${data.role=='admin'?'selected':''}>ผู้ดูแลระบบ</option>
+                                    <option value="executive" ${data.role=='executive'?'selected':''}>ผู้บริหาร</option>
+                                </select>
+                            </div>
+                            <div><label class="label">สถานะ</label>
+                                <select id="m-status" class="input-field">
+                                    <option value="active" ${data.status=='active'||!id?'selected':''}>ใช้งาน</option>
+                                    <option value="inactive" ${data.status=='inactive'?'selected':''}>ระงับ</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div><label class="label">ทีม</label>
+                                <select id="m-team" class="input-field">
+                                    <option value="">-- ไม่ระบุ --</option>${teamOpts}
+                                </select>
+                            </div>
+                            <div><label class="label">รถยนต์</label>
+                                <select id="m-vehicle" class="input-field">
+                                    <option value="">-- ไม่ระบุ --</option>${vehOpts}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                `, 'บันทึก', 'submitMaster');
+            } else if (table === 'teams') {
+                createModal('masterModal', id ? 'แก้ไขทีม' : 'เพิ่มทีม', `
+                    <div class="space-y-4">
+                        <div><label class="label">ชื่อทีม</label><input type="text" id="m-name" value="${data.team_name||''}" required class="input-field"></div>
+                    </div>
+                `, 'บันทึก', 'submitMaster');
+            } else if (table === 'vehicles') {
+                createModal('masterModal', id ? 'แก้ไขรถยนต์' : 'เพิ่มรถยนต์', `
+                    <div class="space-y-4">
+                        <div><label class="label">ทะเบียนรถ</label><input type="text" id="m-plate" value="${data.license_plate||''}" required class="input-field"></div>
+                        <div><label class="label">ชื่อรถ/รุ่น</label><input type="text" id="m-name" value="${data.vehicle_name||''}" required class="input-field"></div>
+                        <div><label class="label">อัตราสิ้นเปลือง (กม./ลิตร)</label><input type="number" step="0.1" id="m-eff" value="${data.fuel_efficiency||''}" required class="input-field"></div>
+                    </div>
+                `, 'บันทึก', 'submitMaster');
+            }
+        }
+
+        async function submitMaster(e) {
+            e.preventDefault();
+            showLoader();
+            try {
+                let payload = {};
+                if(editTable === 'users') {
+                    payload = {
+                        name: document.getElementById('m-name').value,
+                        username: document.getElementById('m-username').value,
+                        role: document.getElementById('m-role').value,
+                        status: document.getElementById('m-status').value,
+                        team_id: document.getElementById('m-team').value || null,
+                        vehicle_id: document.getElementById('m-vehicle').value || null
+                    };
+                    const pass = document.getElementById('m-pass').value;
+                    if(pass) payload.password_hash = await hashPassword(pass);
+                } else if(editTable === 'teams') {
+                    payload = { team_name: document.getElementById('m-name').value };
+                } else if(editTable === 'vehicles') {
+                    payload = {
+                        license_plate: document.getElementById('m-plate').value,
+                        vehicle_name: document.getElementById('m-name').value,
+                        fuel_efficiency: document.getElementById('m-eff').value
+                    };
+                }
+
+                if(editId) {
+                    await dbClient.from(editTable).update(payload).eq('id', editId);
+                } else {
+                    await dbClient.from(editTable).insert([payload]);
+                }
+                showToast('บันทึกข้อมูลสำเร็จ');
+                closeModal('masterModal');
+                
+                if(editTable === 'users') loadUsers();
+                if(editTable === 'teams') loadTeams();
+                if(editTable === 'vehicles') loadVehicles();
+            } catch(err) {
+                showToast(err.message, 'error');
+            }
+            hideLoader();
+        }
+
+        // Aliases for the buttons in UI
+        function openUserModal() { openMasterModal('users'); }
+        function openTeamModal() { openMasterModal('teams'); }
+        function openVehicleModal() { openMasterModal('vehicles'); }
+        function editUser(id) { openMasterModal('users', id); }
+
+        // ==========================================
+        // 6. Export CSV
+        // ==========================================
+        function exportCSV(type) {
+            let data = type === 'daily_reports' ? appState.data.reports : appState.data.fuels;
+            if(!data || data.length === 0) return showToast('ไม่มีข้อมูลสำหรับ Export', 'error');
+            
+            let csv = '';
+            if(type === 'daily_reports') {
+                csv = 'Date,User,Status,Area,Start,End,Distance,Sales,Visited,Approval\n';
+                data.forEach(r => {
+                    csv += `${r.report_date},"${r.users?.name}","${r.work_status}","${r.area||''}",${r.mileage_start||''},${r.mileage_end||''},${r.distance||''},${r.total_sales||''},${r.store_visited||''},"${r.approval_status}"\n`;
+                });
+            } else {
+                csv = 'Date,User,Vehicle,Mileage,Liters,Amount\n';
+                data.forEach(f => {
+                    csv += `${f.fuel_date},"${f.users?.name}","${f.vehicle_id}",${f.mileage},${f.liters},${f.amount}\n`;
+                });
+            }
+            
+            const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", `export_${type}_${new Date().getTime()}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showToast('Export CSV สำเร็จ');
+            logAudit('EXPORT', type, null, 'Exported CSV');
+        }
+
+        // Initialize App on load
+        window.onload = initApp;
+    </script>
+</body>
+</html>
