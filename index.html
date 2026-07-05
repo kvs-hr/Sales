@@ -49,19 +49,15 @@
     </style>
 </head>
 <body class="text-slate-800 antialiased h-screen flex overflow-hidden">
-
     <!-- Global Loader -->
     <div id="global-loader" class="backdrop-blur-sm">
         <div class="loader mb-4" style="width: 40px; height: 40px; border-width: 4px;"></div>
         <p class="text-indigo-600 font-medium">กำลังโหลดข้อมูล...</p>
     </div>
-
     <!-- Toast Container -->
     <div id="toast-container"></div>
-
     <!-- Modals Container (Dynamic) -->
     <div id="modal-container"></div>
-
     <!-- Landing Page (Guest) -->
     <div id="view-landing" class="view w-full h-full overflow-y-auto bg-gradient-to-br from-indigo-50 to-white active">
         <nav class="glass fixed w-full top-0 z-50 border-b border-white/20">
@@ -89,7 +85,6 @@
             </div>
         </div>
     </div>
-
     <!-- App Layout (Auth) -->
     <div id="app-layout" class="hidden w-full h-full flex flex-col md:flex-row">
         <!-- Sidebar (Desktop) -->
@@ -114,7 +109,6 @@
                 </button>
             </div>
         </aside>
-
         <!-- Main Content -->
         <main class="flex-1 flex flex-col h-full bg-slate-50 overflow-hidden relative pb-16 md:pb-0">
             <!-- Header (Mobile) -->
@@ -127,7 +121,6 @@
                     <button onclick="confirmLogout()" class="text-red-500 p-1"><i data-lucide="log-out" class="w-5 h-5"></i></button>
                 </div>
             </header>
-
             <!-- Views Container -->
             <div class="flex-1 overflow-y-auto p-4 md:p-8" id="views-container">
                 
@@ -147,7 +140,6 @@
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" id="dashboard-kpis">
                         <!-- Rendered by JS -->
                     </div>
-
                     <!-- Charts -->
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6 w-full">
                         <div class="card p-4 min-w-0 w-full overflow-hidden">
@@ -164,7 +156,6 @@
                         </div>
                     </div>
                 </div>
-
                 <!-- Reports View -->
                 <div id="view-reports" class="view fade-in">
                     <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
@@ -205,7 +196,6 @@
                         </table>
                     </div>
                 </div>
-
                 <!-- Fuel View -->
                 <div id="view-fuel" class="view fade-in">
                     <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
@@ -255,7 +245,6 @@
                         </table>
                     </div>
                 </div>
-
                 <!-- Master View (Admin) -->
                 <div id="view-master" class="view fade-in">
                     <h2 class="text-2xl font-bold text-slate-800 mb-6">ข้อมูลหลัก (Master Data)</h2>
@@ -278,7 +267,6 @@
                         </div>
                     </div>
                 </div>
-
                 <!-- Audit View (Admin) -->
                 <div id="view-audit" class="view fade-in">
                     <h2 class="text-2xl font-bold text-slate-800 mb-6">ประวัติการใช้งาน (Audit Logs)</h2>
@@ -321,7 +309,6 @@
             </div>
         </main>
     </div>
-
     <!-- Core Application Logic -->
     <script>
         // ==========================================
@@ -335,7 +322,6 @@
         if (SUPABASE_URL && SUPABASE_URL.startsWith('http')) {
             dbClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         }
-
         const appState = {
             user: null,
             currentView: 'landing',
@@ -351,14 +337,12 @@
                 fuel: null
             }
         };
-
         const ROLES = {
             ADMIN: 'admin',
             EXEC: 'executive',
             SUP: 'supervisor',
             SALES: 'sales'
         };
-
         const MENU_ITEMS = [
             { id: 'dashboard', icon: 'layout-dashboard', label: 'Dashboard', roles: [ROLES.ADMIN, ROLES.EXEC, ROLES.SUP, ROLES.SALES] },
             { id: 'reports', icon: 'file-text', label: 'รายงานยอดขาย', roles: [ROLES.ADMIN, ROLES.SUP, ROLES.SALES] },
@@ -367,7 +351,6 @@
             { id: 'master', icon: 'database', label: 'ข้อมูลหลัก', roles: [ROLES.ADMIN] },
             { id: 'audit', icon: 'history', label: 'ประวัติระบบ', roles: [ROLES.ADMIN] },
         ];
-
         // ==========================================
         // 2. Utility Functions
         // ==========================================
@@ -388,7 +371,6 @@
                 setTimeout(() => toast.remove(), 300);
             }, 3000);
         }
-
         async function hashPassword(password) {
             const encoder = new TextEncoder();
             const data = encoder.encode(password);
@@ -396,10 +378,8 @@
             const hashArray = Array.from(new Uint8Array(hashBuffer));
             return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
         }
-
         function formatNumber(num) { return Number(num).toLocaleString('th-TH', { maximumFractionDigits: 2 }); }
         function formatDate(dateStr) { if(!dateStr) return '-'; return new Date(dateStr).toLocaleDateString('th-TH'); }
-
         async function logAudit(action, tableName, recordId, detail) {
             if(!dbClient || !appState.user) return;
             await dbClient.from('audit_logs').insert([{
@@ -407,7 +387,6 @@
                 performed_by: appState.user.id, detail
             }]);
         }
-
         async function compressImage(file) {
             return new Promise((resolve) => {
                 const reader = new FileReader();
@@ -430,7 +409,6 @@
                 };
             });
         }
-
         async function uploadImage(file, path) {
             if(!dbClient) return null;
             const compressed = await compressImage(file);
@@ -440,7 +418,6 @@
             const { data: publicUrlData } = dbClient.storage.from('img').getPublicUrl(fileName);
             return publicUrlData.publicUrl;
         }
-
         // ==========================================
         // 3. UI Navigation & Rendering
         // ==========================================
@@ -448,9 +425,14 @@
             lucide.createIcons();
             
             // Setup Month Filter default
+            // Setup Month Filter default (safe null check)
             const today = new Date();
             document.getElementById('filter-report-month').value = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}`;
-
+            const monthVal = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}`;
+            const reportMonthEl = document.getElementById('filter-report-month');
+            const dashMonthEl = document.getElementById('dash-month');
+            if (reportMonthEl) reportMonthEl.value = monthVal;
+            if (dashMonthEl) dashMonthEl.value = monthVal;
             const session = localStorage.getItem('autosales_session');
             if (session && dbClient) {
                 appState.user = JSON.parse(session);
@@ -460,7 +442,6 @@
                 navigate('landing');
             }
         }
-
         function navigate(viewId) {
             document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
             if(viewId === 'landing') {
@@ -474,14 +455,12 @@
                 loadViewData(viewId);
             }
         }
-
         function setupAuthenticatedUI() {
             const user = appState.user;
             document.getElementById('user-name-desktop').textContent = user.name;
             document.getElementById('user-role-desktop').textContent = user.role;
             document.getElementById('user-avatar-desktop').textContent = user.name.charAt(0).toUpperCase();
             document.getElementById('user-name-mobile').textContent = user.name;
-
             // Render Sidebar
             const nav = document.getElementById('sidebar-nav');
             nav.innerHTML = '';
@@ -493,7 +472,6 @@
                     </button>
                 `;
             });
-
             // Render Bottom Nav (Mobile)
             const bottomNav = document.getElementById('bottom-nav-links');
             const adminGrid = document.getElementById('admin-menu-grid');
@@ -511,7 +489,6 @@
                     </button>
                 `;
             });
-
             if (user.role === ROLES.ADMIN || user.role === ROLES.SUP) {
                 bottomNav.innerHTML += `
                     <button onclick="toggleAdminMenu()" class="flex flex-col items-center p-2 text-indigo-600">
@@ -531,16 +508,13 @@
                     `;
                 });
             }
-
             // Hide action buttons for Executive
             if(user.role === ROLES.EXEC) {
                 document.getElementById('btn-add-report')?.classList.add('hidden');
                 document.getElementById('btn-add-fuel')?.classList.add('hidden');
             }
-
             lucide.createIcons();
         }
-
         function updateMenuHighlight() {
             document.querySelectorAll('[id^="menu-"], [id^="bmenu-"]').forEach(el => {
                 el.classList.remove('bg-indigo-50', 'text-indigo-600');
@@ -558,13 +532,11 @@
                 bMenu.classList.remove('text-slate-500');
             }
         }
-
         function toggleAdminMenu() {
             const menu = document.getElementById('admin-mobile-menu');
             menu.classList.toggle('hidden');
             menu.classList.toggle('flex');
         }
-
         // ==========================================
         // 4. Data Loading & View Render
         // ==========================================
@@ -585,7 +557,6 @@
             }
             hideLoader();
         }
-
         function getBaseQuery(table) {
             let q = dbClient.from(table).select('*, users!inner(name, team_id)');
             if (appState.user.role === ROLES.SALES) {
@@ -595,13 +566,11 @@
             }
             return q;
         }
-
         // --- DASHBOARD ---
         async function loadDashboardData() {
             const dashUserEl = document.getElementById('dash-user');
             const dashTeamEl = document.getElementById('dash-team');
             const dashMonth = document.getElementById('dash-month').value;
-
             if (appState.user.role !== ROLES.SALES) {
                 dashUserEl.classList.remove('hidden');
                 dashTeamEl.classList.remove('hidden');
@@ -614,10 +583,8 @@
                     if (teams) teams.forEach(t => dashTeamEl.insertAdjacentHTML('beforeend', `<option value="${t.id}">${t.team_name}</option>`));
                 }
             }
-
             let qRep = getBaseQuery('daily_reports').order('report_date', {ascending: false});
             let qFuel = getBaseQuery('fuel_transactions').order('fuel_date', {ascending: false});
-
             if (dashTeamEl && dashTeamEl.value && appState.user.role !== ROLES.SALES) {
                 const { data: teamUsers } = await dbClient.from('users').select('id').eq('team_id', dashTeamEl.value);
                 const userIds = teamUsers ? teamUsers.map(u => u.id) : [];
@@ -644,7 +611,6 @@
                 qRep = qRep.limit(100);
                 qFuel = qFuel.limit(100);
             }
-
             const [{ data: reports }, { data: fuels }] = await Promise.all([qRep, qFuel]);
             
             let totalSales = 0, totalDist = 0, totalFuelCost = 0;
@@ -653,7 +619,6 @@
             
             const costPerKm = totalDist > 0 ? totalFuelCost / totalDist : 0;
             const salesPerKm = totalDist > 0 ? totalSales / totalDist : 0;
-
             const kpiHtml = `
                 <div class="card p-4 border-l-4 border-indigo-500">
                     <p class="text-sm text-slate-500">ยอดขายรวม</p>
@@ -680,7 +645,6 @@
                 renderCharts(reports || [], fuels || []);
             }, 150);
         }
-
         function renderCharts(reports, fuels) {
             // Group by date for simple charts
             const salesByDate = {};
@@ -690,7 +654,6 @@
             });
             const labels = Object.keys(salesByDate).sort().slice(-7);
             const data = labels.map(l => salesByDate[l]);
-
             if(appState.charts.sales) appState.charts.sales.destroy();
             const ctx1 = document.getElementById('salesChart').getContext('2d');
             appState.charts.sales = new Chart(ctx1, {
@@ -698,7 +661,6 @@
                 data: { labels, datasets: [{ label: 'ยอดขาย (บาท)', data, borderColor: '#4f46e5', tension: 0.3, fill: true, backgroundColor: 'rgba(79,70,229,0.1)' }] },
                 options: { responsive: true, maintainAspectRatio: true, aspectRatio: 2 }
             });
-
             // Fuel Chart
             const fuelByDate = {};
             fuels.forEach(f => {
@@ -707,7 +669,6 @@
             });
             const flabels = Object.keys(fuelByDate).sort().slice(-7);
             const fdata = flabels.map(l => fuelByDate[l]);
-
             if(appState.charts.fuel) appState.charts.fuel.destroy();
             const ctx2 = document.getElementById('fuelChart').getContext('2d');
             appState.charts.fuel = new Chart(ctx2, {
@@ -716,7 +677,6 @@
                 options: { responsive: true, maintainAspectRatio: true, aspectRatio: 2 }
             });
         }
-
         // --- REPORTS ---
         async function loadReports() {
             const month = document.getElementById('filter-report-month').value; // YYYY-MM
@@ -735,7 +695,6 @@
                     if (teams) teams.forEach(t => teamFilterEl.insertAdjacentHTML('beforeend', `<option value="${t.id}">${t.team_name}</option>`));
                 }
             }
-
             let q = getBaseQuery('daily_reports').order('report_date', {ascending: false});
             
             if (teamFilterEl && teamFilterEl.value && appState.user.role !== ROLES.SALES) {
@@ -754,7 +713,6 @@
                 const lastDay = new Date(y, m, 0).getDate();
                 q = q.gte('report_date', `${month}-01`).lte('report_date', `${month}-${lastDay}`);
             }
-
             const { data } = await q;
             appState.data.reports = data || [];
             
@@ -787,7 +745,6 @@
             `).join('') || `<tr><td colspan="7" class="text-center py-8 text-slate-500">ไม่พบข้อมูล</td></tr>`;
             lucide.createIcons();
         }
-
         // --- FUEL ---
         async function loadFuels() {
             const { data } = await getBaseQuery('fuel_transactions').order('fuel_date', {ascending: false});
@@ -812,7 +769,6 @@
             `}).join('') || `<tr><td colspan="7" class="text-center py-8 text-slate-500">ไม่พบข้อมูล</td></tr>`;
             lucide.createIcons();
         }
-
         // --- USERS ---
         async function loadUsers() {
             const { data } = await dbClient.from('users').select('*, teams!fk_user_team(team_name), vehicles(license_plate)').order('created_at', {ascending: false});
@@ -836,19 +792,25 @@
             `).join('');
             lucide.createIcons();
         }
-
         async function deleteUser(id, name) {
-            if (!confirm(`ยืนยันการลบผู้ใช้งาน "${name}" ออกจากระบบ?\n\nการดำเนินการนี้ไม่สามารถยกเลิกได้`)) return;
-            const { error } = await dbClient.from('users').delete().eq('id', id);
-            if (error) {
-                showToast(`ลบไม่สำเร็จ: ${error.message}`, 'error');
-            } else {
+            if (!confirm(`ยืนยันการลบผู้ใช้งาน "${name}" ออกจากระบบ?\n\nประวัติการใช้งาน (Audit Log) ของผู้ใช้คนนี้จะถูกลบออกด้วย\nการดำเนินการนี้ไม่สามารถยกเลิกได้`)) return;
+            
+            showLoader();
+            try {
+                // ลบ audit_logs ที่เกี่ยวข้องกับ user คนนี้ก่อน
+                const { error: auditError } = await dbClient.from('audit_logs').delete().eq('performed_by', id);
+                if (auditError) throw new Error(`ลบ Audit Log ไม่สำเร็จ: ${auditError.message}`);
+                // จากนั้นค่อยลบ user
+                const { error: userError } = await dbClient.from('users').delete().eq('id', id);
+                if (userError) throw new Error(`ลบผู้ใช้งานไม่สำเร็จ: ${userError.message}`);
                 showToast(`ลบผู้ใช้งาน "${name}" เรียบร้อยแล้ว`, 'success');
-                logAudit('DELETE', 'users', id, `Deleted user: ${name}`);
                 await loadUsers();
+            } catch (err) {
+                showToast(err.message, 'error');
+            } finally {
+                hideLoader();
             }
         }
-
         // --- MASTER DATA ---
         async function loadMasterData() {
             const [{data: teams}, {data: vehicles}] = await Promise.all([
@@ -874,7 +836,6 @@
             `).join('');
             lucide.createIcons();
         }
-
         // --- AUDIT LOG ---
         async function loadAudit() {
             const { data } = await dbClient.from('audit_logs').select('*, users!performed_by(name)').order('created_at', {ascending: false}).limit(50);
@@ -888,7 +849,6 @@
                 </tr>
             `).join('');
         }
-
         // ==========================================
         // 5. Modals & Forms Logic
         // ==========================================
@@ -915,7 +875,6 @@
             `;
             lucide.createIcons();
         }
-
         function closeModal(id) {
             const modal = document.getElementById(id);
             if(modal) {
@@ -923,17 +882,14 @@
                 setTimeout(() => modal.remove(), 300);
             }
         }
-
         function openLoginModal() {
             createModal('loginModal', 'เข้าสู่ระบบ', `
                 <div class="space-y-4">
                     <div><label class="label">Username</label><input type="text" id="login-user" required class="input-field" value="admin"></div>
                     <div><label class="label">Password</label><input type="password" id="login-pass" required class="input-field" value="password123"></div>
-
                 </div>
             `, 'Login', 'handleLogin');
         }
-
         async function handleLogin(e) {
             e.preventDefault();
             if(!dbClient) return showToast('Demo Mode: Set URL/Key in code first.', 'error');
@@ -950,7 +906,6 @@
                     .eq('password_hash', passHash)
                     .eq('status', 'active')
                     .single();
-
                 if (error) {
                     console.error("Supabase API Error:", error);
                     throw new Error("DB Error: " + error.message);
@@ -971,14 +926,12 @@
             }
             hideLoader();
         }
-
         function confirmLogout() {
             createModal('logoutModal', 'ยืนยันการออกจากระบบ', `
                 <p class="text-slate-600">คุณต้องการออกจากระบบใช่หรือไม่?</p>
             `, 'ออกจากระบบ', 'handleLogout');
             document.getElementById('logoutModal-submit').className = 'btn btn-danger';
         }
-
         function handleLogout(e) {
             e.preventDefault();
             localStorage.removeItem('autosales_session');
@@ -987,7 +940,6 @@
             navigate('landing');
             showToast('ออกจากระบบเรียบร้อยแล้ว');
         }
-
         function openReportModal() {
             createModal('reportModal', 'สร้างรายงานประจำวัน', `
                 <div class="space-y-4">
@@ -1017,7 +969,6 @@
                 </div>
             `, 'บันทึกรายงาน', 'submitReport');
         }
-
         function toggleReportFields() {
             const status = document.getElementById('rep-status').value;
             const fields = document.getElementById('rep-work-fields');
@@ -1031,7 +982,6 @@
                 document.getElementById('rep-mend').setAttribute('required', 'true');
             }
         }
-
         function calcDist() {
             const s = parseFloat(document.getElementById('rep-mstart').value || 0);
             const e = parseFloat(document.getElementById('rep-mend').value || 0);
@@ -1039,7 +989,6 @@
             document.getElementById('rep-dist').value = d > 0 ? d : 0;
             if(d < 0 && e > 0) showToast('ไมล์สิ้นสุดต้องมากกว่าไมล์เริ่มต้น', 'error');
         }
-
         async function submitReport(e) {
             e.preventDefault();
             const status = document.getElementById('rep-status').value;
@@ -1050,7 +999,6 @@
                 note: document.getElementById('rep-note').value,
                 approval_status: 'pending'
             };
-
             showLoader();
             try {
                 if(status === 'work') {
@@ -1069,7 +1017,6 @@
                     const fEnd = document.getElementById('rep-mend-img').files[0];
                     if(fEnd) data.mileage_end_image = await uploadImage(fEnd, 'mileage');
                 }
-
                 const { data: res, error } = await dbClient.from('daily_reports').insert([data]).select();
                 if(error) throw error;
                 
@@ -1082,7 +1029,6 @@
             }
             hideLoader();
         }
-
         function openFuelModal() {
             createModal('fuelModal', 'บันทึกบิลน้ำมัน', `
                 <div class="space-y-4">
@@ -1099,7 +1045,6 @@
                 </div>
             `, 'บันทึก', 'submitFuel');
         }
-
         async function submitFuel(e) {
             e.preventDefault();
             if(!appState.user.vehicle_id) return showToast('คุณยังไม่ได้ผูกข้อมูลรถยนต์ กรุณาติดต่อ Admin', 'error');
@@ -1108,7 +1053,6 @@
                 const file = document.getElementById('fuel-receipt').files[0];
                 const imgUrl = await uploadImage(file, 'receipts');
                 if(!imgUrl) throw new Error('Upload รูปไม่สำเร็จ');
-
                 const data = {
                     user_id: appState.user.id,
                     vehicle_id: appState.user.vehicle_id,
@@ -1119,7 +1063,6 @@
                     receipt_image: imgUrl,
                     note: document.getElementById('fuel-note').value
                 };
-
                 const { data: res, error } = await dbClient.from('fuel_transactions').insert([data]).select();
                 if(error) throw error;
                 
@@ -1132,7 +1075,6 @@
             }
             hideLoader();
         }
-
         async function deleteRecord(table, id) {
             if(!confirm('คุณแน่ใจหรือไม่ที่จะลบข้อมูลนี้? การกระทำนี้ไม่สามารถกู้คืนได้')) return;
             showLoader();
@@ -1151,7 +1093,6 @@
             }
             hideLoader();
         }
-
         function viewReportImage(url) {
             if(!url || url === 'null') return showToast('ไม่พบรูปภาพ', 'error');
             createModal('imgModal', 'ดูรูปภาพ', `
@@ -1161,13 +1102,11 @@
             `, 'ปิด', 'closeModal("imgModal"); return false;');
             document.getElementById('imgModal-submit').classList.add('hidden');
         }
-
         // ==========================================
         // 5.5 Master Data Modals (Users, Teams, Vehicles)
         // ==========================================
         let editId = null;
         let editTable = null;
-
         async function openMasterModal(table, id = null) {
             editId = id;
             editTable = table;
@@ -1178,7 +1117,6 @@
                 data = res.data || {};
                 hideLoader();
             }
-
             if(table === 'users') {
                 showLoader();
                 const [{data: allTeams}, {data: allVehicles}] = await Promise.all([
@@ -1188,7 +1126,6 @@
                 hideLoader();
                 const teamOpts = (allTeams||[]).map(t => `<option value="${t.id}" ${data.team_id===t.id?'selected':''}>${t.team_name}</option>`).join('');
                 const vehOpts = (allVehicles||[]).map(v => `<option value="${v.id}" ${data.vehicle_id===v.id?'selected':''}>${v.license_plate}</option>`).join('');
-
                 createModal('masterModal', id ? 'แก้ไขผู้ใช้งาน' : 'เพิ่มผู้ใช้งาน', `
                     <div class="space-y-4">
                         <div><label class="label">ชื่อ-สกุล</label><input type="text" id="m-name" value="${data.name||''}" required class="input-field"></div>
@@ -1240,7 +1177,6 @@
                 `, 'บันทึก', 'submitMaster');
             }
         }
-
         async function submitMaster(e) {
             e.preventDefault();
             showLoader();
@@ -1266,7 +1202,6 @@
                         fuel_efficiency: document.getElementById('m-eff').value
                     };
                 }
-
                 if(editId) {
                     await dbClient.from(editTable).update(payload).eq('id', editId);
                 } else {
@@ -1283,13 +1218,11 @@
             }
             hideLoader();
         }
-
         // Aliases for the buttons in UI
         function openUserModal() { openMasterModal('users'); }
         function openTeamModal() { openMasterModal('teams'); }
         function openVehicleModal() { openMasterModal('vehicles'); }
         function editUser(id) { openMasterModal('users', id); }
-
         // ==========================================
         // 6. Export CSV
         // ==========================================
@@ -1322,7 +1255,6 @@
             showToast('Export CSV สำเร็จ');
             logAudit('EXPORT', type, null, 'Exported CSV');
         }
-
         // Initialize App on load
         window.onload = initApp;
     </script>
