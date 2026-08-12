@@ -180,7 +180,7 @@
                         </div>
                     </div>
                     <div class="card overflow-x-auto">
-                        <table class="w-full text-sm text-left">
+                        <table class="w-full text-sm text-left whitespace-nowrap">
                             <thead class="bg-slate-50 text-slate-600 border-b border-slate-200">
                                 <tr>
                                     <th class="px-4 py-3">วันที่</th>
@@ -242,7 +242,7 @@
                         <button onclick="openUserModal()" class="btn btn-primary"><i data-lucide="plus" class="w-4 h-4"></i> เพิ่มผู้ใช้งาน</button>
                     </div>
                     <div class="card overflow-x-auto">
-                        <table class="w-full text-sm text-left">
+                        <table class="w-full text-sm text-left whitespace-nowrap">
                             <thead class="bg-slate-50 text-slate-600 border-b border-slate-200">
                                 <tr>
                                     <th class="px-4 py-3">ชื่อ-สกุล</th>
@@ -283,7 +283,7 @@
                 <div id="view-audit" class="view fade-in">
                     <h2 class="text-2xl font-bold text-slate-800 mb-6">ประวัติการใช้งาน (Audit Logs)</h2>
                     <div class="card overflow-x-auto">
-                        <table class="w-full text-sm text-left">
+                        <table class="w-full text-sm text-left whitespace-nowrap">
                             <thead class="bg-slate-50 text-slate-600 border-b border-slate-200">
                                 <tr>
                                     <th class="px-4 py-3">วันเวลา</th>
@@ -751,7 +751,8 @@
                     <td class="px-4 py-3 text-center flex justify-center gap-2">
                         <button onclick="viewReportImage('${r.mileage_end_image}')" class="text-slate-500 hover:text-indigo-600" title="รูปไมล์"><i data-lucide="image" class="w-4 h-4"></i></button>
                         ${(appState.user.role === ROLES.ADMIN || r.user_id === appState.user.id) ? 
-                        `<button onclick="deleteRecord('daily_reports', '${r.id}')" class="text-red-400 hover:text-red-600"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
+                        `<button onclick="editReport('${r.id}')" class="text-indigo-400 hover:text-indigo-600" title="แก้ไข"><i data-lucide="edit" class="w-4 h-4"></i></button>
+                        <button onclick="deleteRecord('daily_reports', '${r.id}')" class="text-red-400 hover:text-red-600" title="ลบ"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
                     </td>
                 </tr>
             `).join('') || `<tr><td colspan="7" class="text-center py-8 text-slate-500">ไม่พบข้อมูล</td></tr>`;
@@ -1009,34 +1010,47 @@
             navigate('landing');
             showToast('ออกจากระบบเรียบร้อยแล้ว');
         }
-        function openReportModal() {
-            createModal('reportModal', 'สร้างรายงานประจำวัน', `
+        let editReportId = null;
+        function editReport(id) { openReportModal(id); }
+
+        function openReportModal(id = null) {
+            editReportId = id;
+            let r = null;
+            if (id) r = appState.data.reports.find(x => x.id === id);
+
+            createModal('reportModal', id ? 'แก้ไขรายงานประจำวัน' : 'สร้างรายงานประจำวัน', `
                 <div class="space-y-4">
                     <div class="grid grid-cols-2 gap-4">
-                        <div><label class="label">วันที่</label><input type="date" id="rep-date" required class="input-field" value="${new Date().toISOString().split('T')[0]}"></div>
+                        <div><label class="label">วันที่</label><input type="date" id="rep-date" required class="input-field" value="${r ? r.report_date : new Date().toISOString().split('T')[0]}"></div>
                         <div><label class="label">สถานะ</label>
                             <select id="rep-status" required class="input-field" onchange="toggleReportFields()">
-                                <option value="work">ปฏิบัติงาน</option>
-                                <option value="day_off">วันหยุด</option>
+                                <option value="work" ${r && r.work_status === 'work' ? 'selected' : ''}>ปฏิบัติงาน</option>
+                                <option value="day_off" ${r && r.work_status === 'day_off' ? 'selected' : ''}>วันหยุด</option>
                             </select>
                         </div>
                     </div>
-                    <div id="rep-work-fields" class="space-y-4">
-                        <div><label class="label">พื้นที่/จังหวัด</label><input type="text" id="rep-area" class="input-field"></div>
+                    <div id="rep-work-fields" class="space-y-4" style="${r && r.work_status === 'day_off' ? 'display: none;' : ''}">
+                        <div><label class="label">พื้นที่/จังหวัด</label><input type="text" id="rep-area" class="input-field" value="${r ? (r.area || '') : ''}"></div>
                         <div class="grid grid-cols-2 gap-4">
-                            <div><label class="label">ไมล์เริ่มต้น</label><input type="number" id="rep-mstart" class="input-field" oninput="calcDist()"></div>
-                            <div><label class="label">ไมล์สิ้นสุด</label><input type="number" id="rep-mend" class="input-field" oninput="calcDist()"></div>
+                            <div><label class="label">ไมล์เริ่ม</label><input type="number" id="rep-mstart" class="input-field" oninput="calcDist()" value="${r ? (r.mileage_start || '') : ''}"></div>
+                            <div><label class="label">ไมล์สิ้นสุด</label><input type="number" id="rep-mend" class="input-field" oninput="calcDist()" value="${r ? (r.mileage_end || '') : ''}"></div>
                         </div>
-                        <div><label class="label">รูปถ่ายไมล์สิ้นสุด</label><input type="file" id="rep-mend-img" accept="image/*" class="input-field text-sm"></div>
-                        <div><label class="label">ระยะทางรวม (กม.)</label><input type="number" id="rep-dist" readonly class="input-field bg-slate-50"></div>
+                        <div>
+                            <label class="label">รูปไมล์สิ้นสุด ${id ? '(เลือกใหม่ถ้าต้องการเปลี่ยน)' : ''}</label>
+                            <input type="file" id="rep-mend-img" accept="image/*" class="input-field text-sm">
+                        </div>
+                        <div><label class="label">ระยะทางรวม (กม.)</label><input type="number" id="rep-dist" readonly class="input-field bg-slate-50" value="${r ? (r.distance || 0) : 0}"></div>
                         <div class="grid grid-cols-2 gap-4">
-                            <div><label class="label">ยอดขายรวม (บาท)</label><input type="number" id="rep-sales" class="input-field"></div>
-                            <div><label class="label">จำนวนร้านที่เยี่ยม</label><input type="number" id="rep-visited" class="input-field"></div>
+                            <div><label class="label">ยอดขายรวม (บาท)</label><input type="number" id="rep-sales" class="input-field" value="${r ? (r.total_sales || '') : ''}"></div>
+                            <div><label class="label">จำนวนร้านค้าที่พบ</label><input type="number" id="rep-visited" class="input-field" value="${r ? (r.store_visited || '') : ''}"></div>
                         </div>
                     </div>
-                    <div><label class="label">หมายเหตุ</label><textarea id="rep-note" class="input-field h-20"></textarea></div>
+                    <div><label class="label">หมายเหตุ</label><textarea id="rep-note" class="input-field h-20">${r ? (r.note || '') : ''}</textarea></div>
                 </div>
-            `, 'บันทึกรายงาน', 'submitReport');
+            `, id ? 'บันทึกการแก้ไข' : 'บันทึก', 'submitReport');
+            
+            // Check status required on open
+            if (id) toggleReportFields();
         }
         function toggleReportFields() {
             const status = document.getElementById('rep-status').value;
@@ -1086,11 +1100,19 @@
                     const fEnd = document.getElementById('rep-mend-img').files[0];
                     if(fEnd) data.mileage_end_image = await uploadImage(fEnd, 'mileage');
                 }
-                const { data: res, error } = await dbClient.from('daily_reports').insert([data]).select();
-                if(error) throw error;
                 
-                await logAudit('INSERT', 'daily_reports', res[0].id, 'Created daily report');
-                showToast('บันทึกรายงานสำเร็จ');
+                if (editReportId) {
+                    const { error } = await dbClient.from('daily_reports').update(data).eq('id', editReportId);
+                    if(error) throw error;
+                    await logAudit('UPDATE', 'daily_reports', editReportId, 'Updated daily report');
+                    showToast('อัปเดตรายงานสำเร็จ');
+                } else {
+                    const { data: res, error } = await dbClient.from('daily_reports').insert([data]).select();
+                    if(error) throw error;
+                    await logAudit('INSERT', 'daily_reports', res[0].id, 'Created daily report');
+                    showToast('บันทึกรายงานสำเร็จ');
+                }
+                
                 closeModal('reportModal');
                 loadReports();
             } catch(err) {
@@ -1098,21 +1120,31 @@
             }
             hideLoader();
         }
-        function openFuelModal() {
-            createModal('fuelModal', 'บันทึกบิลน้ำมัน', `
+        let editFuelId = null;
+        function editFuel(id) { openFuelModal(id); }
+
+        function openFuelModal(id = null) {
+            editFuelId = id;
+            let f = null;
+            if(id) f = appState.data.fuels.find(x => x.id === id);
+            
+            createModal('fuelModal', id ? 'แก้ไขบิลน้ำมัน' : 'บันทึกบิลน้ำมัน', `
                 <div class="space-y-4">
                     <div class="grid grid-cols-2 gap-4">
-                        <div><label class="label">วันที่เติม</label><input type="date" id="fuel-date" required class="input-field" value="${new Date().toISOString().split('T')[0]}"></div>
-                        <div><label class="label">เลขไมล์ตอนเติม</label><input type="number" id="fuel-mileage" required class="input-field"></div>
+                        <div><label class="label">วันที่เติม</label><input type="date" id="fuel-date" required class="input-field" value="${f ? f.fuel_date : new Date().toISOString().split('T')[0]}"></div>
+                        <div><label class="label">เลขไมล์ตอนเติม</label><input type="number" id="fuel-mileage" required class="input-field" value="${f ? f.mileage : ''}"></div>
                     </div>
                     <div class="grid grid-cols-2 gap-4">
-                        <div><label class="label">จำนวนเงิน (บาท)</label><input type="number" id="fuel-amount" required class="input-field"></div>
-                        <div><label class="label">จำนวนลิตร</label><input type="number" step="0.01" id="fuel-liters" required class="input-field"></div>
+                        <div><label class="label">จำนวนเงิน (บาท)</label><input type="number" id="fuel-amount" required class="input-field" value="${f ? f.amount : ''}"></div>
+                        <div><label class="label">จำนวนลิตร</label><input type="number" step="0.01" id="fuel-liters" required class="input-field" value="${f ? f.liters : ''}"></div>
                     </div>
-                    <div><label class="label">รูปถ่ายใบเสร็จ</label><input type="file" id="fuel-receipt" accept="image/*" class="input-field" required></div>
-                    <div><label class="label">หมายเหตุ</label><textarea id="fuel-note" class="input-field h-20"></textarea></div>
+                    <div>
+                        <label class="label">รูปถ่ายใบเสร็จ ${id ? '(เลือกใหม่ถ้าต้องการเปลี่ยน)' : ''}</label>
+                        <input type="file" id="fuel-receipt" accept="image/*" class="input-field" ${id ? '' : 'required'}>
+                    </div>
+                    <div><label class="label">หมายเหตุ</label><textarea id="fuel-note" class="input-field h-20">${f ? (f.note || '') : ''}</textarea></div>
                 </div>
-            `, 'บันทึก', 'submitFuel');
+            `, id ? 'บันทึกการแก้ไข' : 'บันทึก', 'submitFuel');
         }
 
         async function checkReceiptWithAI(file, inputLiters, inputAmount) {
@@ -1141,7 +1173,7 @@
 
                 if (!response.ok) {
                     showToast('ระบบตรวจสอบ AI ไม่พร้อมใช้งาน (อาจเป็นปัญหาที่ API Key)', 'error');
-                    return true; // หาก API พัง ให้ยอมให้บันทึกผ่านไปก่อน
+                    return true;
                 }
 
                 const result = await response.json();
