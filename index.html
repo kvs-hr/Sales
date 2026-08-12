@@ -205,6 +205,18 @@
                             <button onclick="openFuelModal()" class="btn btn-primary" id="btn-add-fuel"><i data-lucide="plus" class="w-4 h-4"></i> บันทึกบิลน้ำมัน</button>
                         </div>
                     </div>
+                    <div class="card p-4 mb-4 flex flex-wrap gap-4 items-center justify-between">
+                        <div class="flex gap-4 flex-wrap">
+                            <input type="month" id="filter-fuel-month" class="input-field max-w-xs" onchange="loadFuels()">
+                            <select id="filter-fuel-user" class="input-field max-w-xs hidden" onchange="loadFuels()">
+                                <option value="">-- พนักงานทั้งหมด --</option>
+                            </select>
+                            <select id="filter-fuel-team" class="input-field max-w-xs hidden" onchange="loadFuels()">
+                                <option value="">-- ทีมทั้งหมด --</option>
+                            </select>
+                        </div>
+                        <div id="fuel-summary-totals" class="flex gap-4 font-bold text-slate-700 bg-amber-50 px-4 py-2 rounded-lg border border-amber-100"></div>
+                    </div>
                     <div class="card overflow-x-auto">
                         <table class="w-full text-sm text-left">
                             <thead class="bg-slate-50 text-slate-600 border-b border-slate-200">
@@ -747,7 +759,45 @@
         }
         // --- FUEL ---
         async function loadFuels() {
-            const { data } = await getBaseQuery('fuel_transactions').order('fuel_date', {ascending: false});
+            const userFilterEl = document.getElementById('filter-fuel-user');
+            const teamFilterEl = document.getElementById('filter-fuel-team');
+            const month = document.getElementById('filter-fuel-month')?.value || '';
+
+            if (appState.user.role !== ROLES.SALES) {
+                if (userFilterEl) userFilterEl.classList.remove('hidden');
+                if (teamFilterEl) teamFilterEl.classList.remove('hidden');
+                if (userFilterEl && userFilterEl.options.length <= 1) {
+                    const [{ data: users }, { data: teams }] = await Promise.all([
+                        dbClient.from('users').select('id, name').eq('role', 'sales'),
+                        dbClient.from('teams').select('id, team_name')
+                    ]);
+                    if (users) users.forEach(u => userFilterEl.insertAdjacentHTML('beforeend', `<option value="${u.id}">${u.name}</option>`));
+                    if (teams) teams.forEach(t => teamFilterEl.insertAdjacentHTML('beforeend', `<option value="${t.id}">${t.team_name}</option>`));
+                }
+            }
+
+            let q = getBaseQuery('fuel_transactions')
+                .select('*, users!inner(name, team_id), vehicles(license_plate)')
+                .order('fuel_date', {ascending: false});
+
+            if (teamFilterEl && teamFilterEl.value && appState.user.role !== ROLES.SALES) {
+                const { data: teamUsers } = await dbClient.from('users').select('id').eq('team_id', teamFilterEl.value);
+                const userIds = teamUsers ? teamUsers.map(u => u.id) : [];
+                if (userIds.length > 0) q = q.in('user_id', userIds);
+                else q = q.eq('id', '00000000-0000-0000-0000-000000000000');
+            }
+            if (userFilterEl && userFilterEl.value) {
+                q = q.eq('user_id', userFilterEl.value);
+            }
+            if (month) {
+                const parts = month.split('-');
+                const y = parseInt(parts[0], 10);
+                const m = parseInt(parts[1], 10);
+                const lastDay = new Date(y, m, 0).getDate();
+                q = q.gte('fuel_date', `${month}-01`).lte('fuel_date', `${month}-${lastDay}`);
+            }
+
+            const { data } = await q;
             appState.data.fuels = data || [];
             
             const tbody = document.getElementById('table-fuel');
