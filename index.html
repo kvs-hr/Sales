@@ -218,7 +218,7 @@
                         <div id="fuel-summary-totals" class="flex gap-4 font-bold text-slate-700 bg-amber-50 px-4 py-2 rounded-lg border border-amber-100"></div>
                     </div>
                     <div class="card overflow-x-auto">
-                        <table class="w-full text-sm text-left">
+                        <table class="w-full text-sm text-left whitespace-nowrap">
                             <thead class="bg-slate-50 text-slate-600 border-b border-slate-200">
                                 <tr>
                                     <th class="px-4 py-3">วันที่</th>
@@ -826,7 +826,10 @@
                     </td>
                     <td class="px-4 py-3 text-center">
                         ${(appState.user.role === ROLES.ADMIN || f.user_id === appState.user.id) ? 
-                        `<button onclick="deleteRecord('fuel_transactions', '${f.id}')" class="text-red-400 hover:text-red-600"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
+                        `<div class="flex items-center justify-center gap-2">
+                            <button onclick="editFuel('${f.id}')" class="text-indigo-400 hover:text-indigo-600"><i data-lucide="edit" class="w-4 h-4"></i></button>
+                            <button onclick="deleteRecord('fuel_transactions', '${f.id}')" class="text-red-400 hover:text-red-600"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                        </div>` : ''}
                     </td>
                 </tr>
             `}).join('') || `<tr><td colspan="7" class="text-center py-8 text-slate-500">ไม่พบข้อมูล</td></tr>`;
@@ -1136,7 +1139,10 @@
                     })
                 });
 
-                if (!response.ok) return true; // หาก API พัง ให้ยอมให้บันทึกผ่านไปก่อน
+                if (!response.ok) {
+                    showToast('ระบบตรวจสอบ AI ไม่พร้อมใช้งาน (อาจเป็นปัญหาที่ API Key)', 'error');
+                    return true; // หาก API พัง ให้ยอมให้บันทึกผ่านไปก่อน
+                }
 
                 const result = await response.json();
                 let aiText = result.candidates[0].content.parts[0].text;
@@ -1173,32 +1179,47 @@
 
             showLoader();
             
-            // เรียกใช้ AI ตรวจสอบใบเสร็จ
-            const shouldProceed = await checkReceiptWithAI(file, inputLiters, inputAmount);
-            if (!shouldProceed) {
-                hideLoader();
-                return;
+            // เรียกใช้ AI ตรวจสอบใบเสร็จเฉพาะเมื่อมีการอัปโหลดไฟล์ใหม่เท่านั้น
+            if (file) {
+                const shouldProceed = await checkReceiptWithAI(file, inputLiters, inputAmount);
+                if (!shouldProceed) {
+                    hideLoader();
+                    return;
+                }
             }
 
             try {
-                // ไฟล์ถูกอ่านโดยตัวแปร file ด้านบนแล้ว
-                const imgUrl = await uploadImage(file, 'receipts');
-                if(!imgUrl) throw new Error('Upload รูปไม่สำเร็จ');
+                let imgUrl = undefined;
+                if (file) {
+                    imgUrl = await uploadImage(file, 'receipts');
+                    if(!imgUrl) throw new Error('Upload รูปไม่สำเร็จ');
+                }
+
                 const data = {
-                    user_id: appState.user.id,
-                    vehicle_id: appState.user.vehicle_id,
                     fuel_date: document.getElementById('fuel-date').value,
                     mileage: parseFloat(document.getElementById('fuel-mileage').value),
                     amount: parseFloat(document.getElementById('fuel-amount').value),
                     liters: parseFloat(document.getElementById('fuel-liters').value),
-                    receipt_image: imgUrl,
                     note: document.getElementById('fuel-note').value
                 };
-                const { data: res, error } = await dbClient.from('fuel_transactions').insert([data]).select();
-                if(error) throw error;
+                if (imgUrl) data.receipt_image = imgUrl;
+
+                if (editFuelId) {
+                    // Update
+                    const { error } = await dbClient.from('fuel_transactions').update(data).eq('id', editFuelId);
+                    if(error) throw error;
+                    await logAudit('UPDATE', 'fuel_transactions', editFuelId, 'Updated fuel transaction');
+                    showToast('อัปเดตข้อมูลสำเร็จ');
+                } else {
+                    // Insert
+                    data.user_id = appState.user.id;
+                    data.vehicle_id = appState.user.vehicle_id;
+                    const { data: res, error } = await dbClient.from('fuel_transactions').insert([data]).select();
+                    if(error) throw error;
+                    await logAudit('INSERT', 'fuel_transactions', res[0].id, 'Created fuel transaction');
+                    showToast('บันทึกข้อมูลน้ำมันสำเร็จ');
+                }
                 
-                await logAudit('INSERT', 'fuel_transactions', res[0].id, 'Created fuel transaction');
-                showToast('บันทึกข้อมูลน้ำมันสำเร็จ');
                 closeModal('fuelModal');
                 loadFuels();
             } catch(err) {
