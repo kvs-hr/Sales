@@ -595,6 +595,9 @@
                     if (users) users.forEach(u => dashUserEl.insertAdjacentHTML('beforeend', `<option value="${u.id}">${u.name}</option>`));
                     if (teams) teams.forEach(t => dashTeamEl.insertAdjacentHTML('beforeend', `<option value="${t.id}">${t.team_name}</option>`));
                 }
+            } else {
+                dashUserEl.classList.add('hidden');
+                dashTeamEl.classList.add('hidden');
             }
             let qRep = getBaseQuery('daily_reports').order('report_date', {ascending: false});
             let qFuel = getBaseQuery('fuel_transactions').order('fuel_date', {ascending: false});
@@ -715,6 +718,9 @@
                     if (users) users.forEach(u => userFilterEl.insertAdjacentHTML('beforeend', `<option value="${u.id}">${u.name}</option>`));
                     if (teams) teams.forEach(t => teamFilterEl.insertAdjacentHTML('beforeend', `<option value="${t.id}">${t.team_name}</option>`));
                 }
+            } else {
+                userFilterEl.classList.add('hidden');
+                teamFilterEl.classList.add('hidden');
             }
             let q = getBaseQuery('daily_reports').order('report_date', {ascending: false});
             
@@ -784,6 +790,9 @@
                     if (users) users.forEach(u => userFilterEl.insertAdjacentHTML('beforeend', `<option value="${u.id}">${u.name}</option>`));
                     if (teams) teams.forEach(t => teamFilterEl.insertAdjacentHTML('beforeend', `<option value="${t.id}">${t.team_name}</option>`));
                 }
+            } else {
+                if (userFilterEl) userFilterEl.classList.add('hidden');
+                if (teamFilterEl) teamFilterEl.classList.add('hidden');
             }
 
             let q = getBaseQuery('fuel_transactions')
