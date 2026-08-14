@@ -1034,7 +1034,15 @@
         function openReportModal(id = null) {
             editReportId = id;
             let r = null;
-            if (id) r = appState.data.reports.find(x => x.id === id);
+            let defaultStart = '';
+            if (id) {
+                r = appState.data.reports.find(x => x.id === id);
+            } else {
+                const myReports = (appState.data.reports || []).filter(x => x.user_id === appState.user.id).sort((a,b) => new Date(b.report_date) - new Date(a.report_date));
+                if (myReports.length > 0 && myReports[0].mileage_end) {
+                    defaultStart = myReports[0].mileage_end;
+                }
+            }
 
             createModal('reportModal', id ? 'แก้ไขรายงานประจำวัน' : 'สร้างรายงานประจำวัน', `
                 <div class="space-y-4">
@@ -1050,7 +1058,7 @@
                     <div id="rep-work-fields" class="space-y-4" style="${r && r.work_status === 'day_off' ? 'display: none;' : ''}">
                         <div><label class="label">พื้นที่/จังหวัด</label><input type="text" id="rep-area" class="input-field" value="${r ? (r.area || '') : ''}"></div>
                         <div class="grid grid-cols-2 gap-4">
-                            <div><label class="label">ไมล์เริ่ม</label><input type="number" id="rep-mstart" class="input-field" oninput="calcDist()" value="${r ? (r.mileage_start || '') : ''}"></div>
+                            <div><label class="label">ไมล์เริ่ม</label><input type="number" id="rep-mstart" class="input-field" oninput="calcDist()" value="${r ? (r.mileage_start || '') : defaultStart}"></div>
                             <div><label class="label">ไมล์สิ้นสุด</label><input type="number" id="rep-mend" class="input-field" oninput="calcDist()" value="${r ? (r.mileage_end || '') : ''}"></div>
                         </div>
                         <div>
@@ -1161,6 +1169,17 @@
                         <div><label class="label">เลขไมล์ตอนเติม</label><input type="number" id="fuel-mileage" required class="input-field" value="${f ? f.mileage : ''}"></div>
                     </div>
                     <div class="grid grid-cols-2 gap-4">
+                        <div><label class="label">ประเภทการเบิก</label>
+                            <select id="fuel-claim-type" required class="input-field">
+                                <option value="คูปอง" ${f && f.claim_type === 'คูปอง' ? 'selected' : ''}>คูปอง</option>
+                                <option value="แอดวานซ์" ${f && f.claim_type === 'แอดวานซ์' ? 'selected' : ''}>แอดวานซ์</option>
+                            </select>
+                        </div>
+                        <div><label class="label">เลขที่เอกสาร/คูปอง</label>
+                            <input type="text" id="fuel-doc-num" class="input-field" value="${f ? (f.document_number || '') : ''}">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
                         <div><label class="label">จำนวนเงิน (บาท)</label><input type="number" id="fuel-amount" required class="input-field" value="${f ? f.amount : ''}" oninput="calcFuelPrice()"></div>
                         <div><label class="label">จำนวนลิตร</label><input type="number" step="0.01" id="fuel-liters" required class="input-field" value="${f ? f.liters : ''}" oninput="calcFuelPrice()"></div>
                     </div>
@@ -1262,6 +1281,8 @@
                     mileage: parseFloat(document.getElementById('fuel-mileage').value),
                     amount: parseFloat(document.getElementById('fuel-amount').value),
                     liters: parseFloat(document.getElementById('fuel-liters').value),
+                    claim_type: document.getElementById('fuel-claim-type').value,
+                    document_number: document.getElementById('fuel-doc-num').value,
                     note: document.getElementById('fuel-note').value
                 };
                 if (imgUrl) data.receipt_image = imgUrl;
