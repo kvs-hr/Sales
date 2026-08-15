@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sales & Fuel Management System</title>
+    <!-- Load Configuration -->
+    <script src="config.js"></script>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Icons -->
@@ -74,7 +76,7 @@
                 <h1 class="text-5xl font-bold leading-tight text-slate-900">
                     ระบบรายงานทีมขายและ<br>ควบคุมค่าน้ำมัน <span class="text-indigo-600">KVS</span>
                 </h1>
-                <p class="text-lg text-slate-600">ลดความผิดพลาด เพิ่มประสิทธิภาพการทำงาน ด้วยระบบที่ออกแบบมาสำหรับทีมขายยุคใหม่ บันทึกยอดขายและค่าน้ำมันได้อย่างรวดเร็ว พร้อม Dashboard สรุปผลสำหรับผู้บริหาร</p>
+                <p class="text-lg text-slate-600">ลดความผิดพลาด เพิ่มประสิทธิภาพการทำงาน ด้วยระบบที่ออกแบบมาสำหรับทีมขายยุคใหม่ บันทึกยอดขายและค่าน้ำมันได้อย่างรวดเร็ว พร้อม Dashboard สรุปผล</p>
                 <div class="pt-4 flex gap-4">
                     <button onclick="openLoginModal()" class="btn btn-primary px-8 py-3 text-lg">เริ่มต้นใช้งาน</button>
                 </div>
@@ -328,8 +330,9 @@
         // 1. Config & State
         // ==========================================
         // IMPORTANT: Replace with your Supabase URL & Anon Key
-        const SUPABASE_URL = 'https://mwgdyohrmhijaoepprjg.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_c2Q5vp9IO8iVU8jmmcZ6Xg_pp79WT6y';
+        // Load config from window.ENV (config.js)
+        const SUPABASE_URL = (window.ENV && window.ENV.SUPABASE_URL) || '';
+        const SUPABASE_KEY = (window.ENV && window.ENV.SUPABASE_KEY) || '';
         
         let dbClient = null;
         if (SUPABASE_URL && SUPABASE_URL.startsWith('http')) {
@@ -1198,7 +1201,8 @@
 
         async function checkReceiptWithAI(file, inputLiters, inputAmount) {
             try {
-                const apiKey = 'AQ.Ab8RN6KEzaX7eBKjeq7yKd98_86W0eGEPHwgEjTF9Ej43Ogf2g';
+                const apiKey = (window.ENV && window.ENV.GEMINI_API_KEY) || '';
+                if (!apiKey) throw new Error('API Key is missing in config.js');
                 const base64Promise = new Promise((resolve, reject) => {
                     const reader = new FileReader();
                     reader.onload = () => resolve(reader.result.split(',')[1]);
