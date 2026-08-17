@@ -331,8 +331,9 @@
         // ==========================================
         // IMPORTANT: Replace with your Supabase URL & Anon Key
         // Load config from window.ENV (config.js)
-        const SUPABASE_URL = (window.ENV && window.ENV.SUPABASE_URL) || '';
-        const SUPABASE_KEY = (window.ENV && window.ENV.SUPABASE_KEY) || '';
+        // Load config from window.ENV (config.js) or fallback to defaults
+        const SUPABASE_URL = (window.ENV && window.ENV.SUPABASE_URL) || 'https://mwgdyohrmhijaoepprjg.supabase.co';
+        const SUPABASE_KEY = (window.ENV && window.ENV.SUPABASE_KEY) || 'sb_publishable_c2Q5vp9IO8iVU8jmmcZ6Xg_pp79WT6y';
         
         let dbClient = null;
         if (SUPABASE_URL && SUPABASE_URL.startsWith('http')) {
@@ -1201,8 +1202,15 @@
 
         async function checkReceiptWithAI(file, inputLiters, inputAmount) {
             try {
-                const apiKey = (window.ENV && window.ENV.GEMINI_API_KEY) || '';
-                if (!apiKey) throw new Error('API Key is missing in config.js');
+                let apiKey = (window.ENV && window.ENV.GEMINI_API_KEY) || localStorage.getItem('gemini_api_key');
+                if (!apiKey) {
+                    apiKey = prompt("Please enter your Gemini API Key to use AI Receipt Scanning:\n(This will be saved securely in your browser)");
+                    if (!apiKey) {
+                        showToast("AI Scanning cancelled (No API Key)", "error");
+                        return false;
+                    }
+                    localStorage.setItem('gemini_api_key', apiKey);
+                }
                 const base64Promise = new Promise((resolve, reject) => {
                     const reader = new FileReader();
                     reader.onload = () => resolve(reader.result.split(',')[1]);
