@@ -164,6 +164,8 @@
                     <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                         <h2 class="text-2xl font-bold text-slate-800">รายงานประจำวัน</h2>
                         <div class="flex gap-2">
+                            <input type="file" id="import-report-file" accept=".csv" class="hidden" onchange="importCSV(event, 'daily_reports')">
+                            <button onclick="document.getElementById('import-report-file').click()" class="btn btn-secondary"><i data-lucide="upload" class="w-4 h-4"></i> Import</button>
                             <button onclick="exportCSV('daily_reports')" class="btn btn-secondary"><i data-lucide="download" class="w-4 h-4"></i> Export</button>
                             <button onclick="openReportModal()" class="btn btn-primary" id="btn-add-report"><i data-lucide="plus" class="w-4 h-4"></i> สร้างรายงาน</button>
                         </div>
@@ -205,6 +207,8 @@
                     <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                         <h2 class="text-2xl font-bold text-slate-800">บันทึกการเติมน้ำมัน</h2>
                         <div class="flex gap-2">
+                            <input type="file" id="import-fuel-file" accept=".csv" class="hidden" onchange="importCSV(event, 'fuel_transactions')">
+                            <button onclick="document.getElementById('import-fuel-file').click()" class="btn btn-secondary"><i data-lucide="upload" class="w-4 h-4"></i> Import</button>
                             <button onclick="exportCSV('fuel_transactions')" class="btn btn-secondary"><i data-lucide="download" class="w-4 h-4"></i> Export</button>
                             <button onclick="openFuelModal()" class="btn btn-primary" id="btn-add-fuel"><i data-lucide="plus" class="w-4 h-4"></i> บันทึกบิลน้ำมัน</button>
                         </div>
@@ -1571,6 +1575,138 @@
             showToast('Export CSV สำเร็จ');
             logAudit('EXPORT', type, null, 'Exported CSV');
         }
+
+        async function importCSV(e, type) {
+            const file = e.target.files[0];
+            if (!file) return;
+            showLoader();
+            try {
+                const text = await file.text();
+                // Basic CSV Parser handling quotes
+                const rows = [];
+                let inQuotes = false;
+                let currentRow = [];
+                let currentCell = '';
+                
+                // Remove BOM if exists
+                let cleanText = text.replace(/^\uFEFF/, '');
+                
+                for (let i = 0; i < cleanText.length; i++) {
+                    let char = cleanText[i];
+                    if (char === '"' && cleanText[i+1] === '"') {
+                        currentCell += '"';
+                        i++;
+                    } else if (char === '"') {
+                        inQuotes = !inQuotes;
+                    } else if (char === ',' && !inQuotes) {
+                        currentRow.push(currentCell.trim());
+                        currentCell = '';
+                    } else if ((char === '\n' || (char === '\r' && cleanText[i+1] === '\n')) && !inQuotes) {
+                        if (char === '\r') i++;
+                        currentRow.push(currentCell.trim());
+                        rows.push(currentRow);
+                        currentRow = [];
+                        currentCell = '';
+                    } else {
+                        currentCell += char;
+                    }
+                }
+                if (currentCell || currentRow.length > 0) {
+                    currentRow.push(currentCell.trim());
+                    rows.push(currentRow);
+                }
+
+                if (rows.length < 2) throw new Error('ไฟล์ว่างเปล่าหรือไม่มีข้อมูล');
+
+                const headers = rows[0];
+                const dataRows = rows.slice(1).filter(r => r.length > 1 && r[0]); // Filter empty rows
+
+                let successCount = 0;
+                let failCount = 0;
+
+                for (const row of dataRows) {
+                    try {
+                        if (type === 'daily_reports') {
+                            const date = row[0];
+                            const empCode = row[1];
+                            const workStatus = row[3];
+                            const area = row[4];
+                            const start = row[5] ? parseFloat(row[5]) : null;
+                            const end = row[6] ? parseFloat(row[6]) : null;
+                            const dist = row[7] ? parseFloat(row[7]) : null;
+                            const sales = row[8] ? parseFloat(row[8].replace(/,/g, '')) : 0;
+                            const visited = row[9] ? parseInt(row[9]) : 0;
+                            const approval = row[10] || 'pending';
+
+                            if(!empCode) continue;
+                            const { data: userData } = await dbClient.from('users').select('id, team_id').eq('emp_code', empCode).maybeSingle();
+                            if(!userData) { failCount++; continue; }
+
+                            const payload = {
+                                user_id: userData.id,
+                                team_id: userData.team_id,
+                                report_date: date,
+                                work_status: workStatus === 'ปฏิบัติงาน' ? 'work' : 'leave',
+                                area: area,
+                                mileage_start: start,
+                                mileage_end: end,
+                                distance: dist,
+                                total_sales: sales,
+                                store_visited: visited,
+                                approval_status: approval
+                            };
+                            await dbClient.from('daily_reports').insert([payload]);
+                            successCount++;
+
+                        } else if (type === 'fuel_transactions') {
+                            const date = row[0];
+                            const empCode = row[1];
+                            const vehicleRef = row[3]; // license_plate
+                            const mileage = row[4] ? parseFloat(row[4]) : null;
+                            const claimType = row[5] || null;
+                            const docNum = row[6] || null;
+                            const liters = row[7] ? parseFloat(row[7].replace(/,/g, '')) : 0;
+                            const amount = row[8] ? parseFloat(row[8].replace(/,/g, '')) : 0;
+
+                            if(!empCode) continue;
+                            const { data: userData } = await dbClient.from('users').select('id').eq('emp_code', empCode).maybeSingle();
+                            if(!userData) { failCount++; continue; }
+                            
+                            let vId = null;
+                            const { data: vData } = await dbClient.from('vehicles').select('id').eq('license_plate', vehicleRef).maybeSingle();
+                            if(vData) vId = vData.id;
+
+                            const payload = {
+                                user_id: userData.id,
+                                vehicle_id: vId,
+                                fuel_date: date,
+                                mileage: mileage,
+                                claim_type: claimType,
+                                document_number: docNum,
+                                liters: liters,
+                                amount: amount
+                            };
+                            await dbClient.from('fuel_transactions').insert([payload]);
+                            successCount++;
+                        }
+                    } catch(err) {
+                        failCount++;
+                        console.error("Import Row Error:", err);
+                    }
+                }
+                
+                showToast(`นำเข้าข้อมูลสำเร็จ ${successCount} รายการ (ล้มเหลว ${failCount})`);
+                if(type === 'daily_reports') loadReports();
+                else loadFuels();
+                
+            } catch(e) {
+                console.error("Import CSV Error", e);
+                showToast('นำเข้าข้อมูลไม่สำเร็จ: ' + e.message, 'error');
+            }
+            e.target.value = ''; // Reset file input
+            hideLoader();
+        }
+
         // Initialize App on load
         window.onload = initApp;
     </script>
