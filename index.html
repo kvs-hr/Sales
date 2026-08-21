@@ -1264,18 +1264,22 @@
                 const aiAmount = parseFloat(aiData.amount) || 0;
 
                 // ตรวจสอบความต่าง
-                if (aiLiters > 0 && aiAmount > 0) {
-                    const litersDiff = Math.abs(aiLiters - inputLiters);
-                    const amountDiff = Math.abs(aiAmount - inputAmount);
+                if (aiLiters === 0 || aiAmount === 0) {
+                    showToast('AI มองไม่เห็นตัวเลขจำนวนเงินหรือลิตรบนใบเสร็จ (ข้ามการตรวจสอบ)', 'warning');
+                    return true;
+                }
+                
+                const litersDiff = Math.abs(aiLiters - inputLiters);
+                const amountDiff = Math.abs(aiAmount - inputAmount);
 
-                    if (litersDiff > 1 || amountDiff > 10) {
-                        const msg = `⚠️ ระบบ AI ตรวจพบข้อมูลบนใบเสร็จคลาดเคลื่อน:\n\n- AI อ่านได้: ${aiAmount} บาท, ${aiLiters} ลิตร\n- คุณกรอก: ${inputAmount} บาท, ${inputLiters} ลิตร\n\nต้องการยืนยันข้อมูลที่คุณกรอกหรือไม่?`;
-                        return confirm(msg);
-                    }
+                if (litersDiff > 1 || amountDiff > 10) {
+                    const msg = `⚠️ ระบบ AI ตรวจพบข้อมูลบนใบเสร็จคลาดเคลื่อน:\n\n- AI อ่านได้: ${aiAmount} บาท, ${aiLiters} ลิตร\n- คุณกรอก: ${inputAmount} บาท, ${inputLiters} ลิตร\n\nต้องการยืนยันข้อมูลที่คุณกรอกหรือไม่?`;
+                    return confirm(msg);
                 }
                 return true;
             } catch (e) {
                 console.error("AI Check Error:", e);
+                showToast(`AI ไม่สามารถประมวลผลใบเสร็จได้ (${e.message})`, 'warning');
                 return true; // หากมี Error ก็ให้บันทึกผ่านไปก่อน ไม่บล็อคผู้ใช้
             }
         }
