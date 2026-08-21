@@ -176,6 +176,11 @@
                             <select id="filter-report-user" class="input-field max-w-xs hidden" onchange="loadReports()">
                                 <option value="">-- พนักงานทั้งหมด --</option>
                             </select>
+                            <select id="filter-report-department" class="input-field max-w-xs hidden" onchange="loadReports()">
+                                <option value="">-- แผนกทั้งหมด --</option>
+                                <option value="ขายเครดิต">ขายเครดิต</option>
+                                <option value="ขายหน่วยรถเงินสด">ขายหน่วยรถเงินสด</option>
+                            </select>
                             <select id="filter-report-team" class="input-field max-w-xs hidden" onchange="loadReports()">
                                 <option value="">-- ทีมทั้งหมด --</option>
                             </select>
@@ -219,6 +224,11 @@
                             <select id="filter-fuel-user" class="input-field max-w-xs hidden" onchange="loadFuels()">
                                 <option value="">-- พนักงานทั้งหมด --</option>
                             </select>
+                            <select id="filter-fuel-department" class="input-field max-w-xs hidden" onchange="loadFuels()">
+                                <option value="">-- แผนกทั้งหมด --</option>
+                                <option value="ขายเครดิต">ขายเครดิต</option>
+                                <option value="ขายหน่วยรถเงินสด">ขายหน่วยรถเงินสด</option>
+                            </select>
                             <select id="filter-fuel-team" class="input-field max-w-xs hidden" onchange="loadFuels()">
                                 <option value="">-- ทีมทั้งหมด --</option>
                             </select>
@@ -248,7 +258,10 @@
                 <div id="view-users" class="view fade-in">
                     <div class="flex justify-between items-center mb-6">
                         <h2 class="text-2xl font-bold text-slate-800">จัดการผู้ใช้งาน</h2>
-                        <button onclick="openUserModal()" class="btn btn-primary"><i data-lucide="plus" class="w-4 h-4"></i> เพิ่มผู้ใช้งาน</button>
+                        <div class="flex gap-2">
+                            <button onclick="exportCSV('users')" class="btn btn-secondary"><i data-lucide="download" class="w-4 h-4"></i> Export</button>
+                            <button onclick="openUserModal()" class="btn btn-primary"><i data-lucide="plus" class="w-4 h-4"></i> เพิ่มผู้ใช้งาน</button>
+                        </div>
                     </div>
                     <div class="card overflow-x-auto">
                         <table class="w-full text-sm text-left whitespace-nowrap">
@@ -274,7 +287,10 @@
                         <div class="card p-4">
                             <div class="flex justify-between items-center mb-4">
                                 <h3 class="text-lg font-semibold">รายชื่อทีม</h3>
-                                <button onclick="openTeamModal()" class="btn btn-secondary btn-sm"><i data-lucide="plus" class="w-4 h-4"></i> เพิ่ม</button>
+                                <div class="flex gap-2">
+                                    <button onclick="exportCSV('teams')" class="btn btn-secondary btn-sm"><i data-lucide="download" class="w-4 h-4"></i> Export</button>
+                                    <button onclick="openTeamModal()" class="btn btn-secondary btn-sm"><i data-lucide="plus" class="w-4 h-4"></i> เพิ่ม</button>
+                                </div>
                             </div>
                             <ul id="list-teams" class="divide-y divide-slate-100 border border-slate-100 rounded-lg"></ul>
                         </div>
@@ -282,7 +298,10 @@
                         <div class="card p-4 hidden">
                             <div class="flex justify-between items-center mb-4">
                                 <h3 class="text-lg font-semibold">รายชื่อรถยนต์</h3>
-                                <button onclick="openVehicleModal()" class="btn btn-secondary btn-sm"><i data-lucide="plus" class="w-4 h-4"></i> เพิ่ม</button>
+                                <div class="flex gap-2">
+                                    <button onclick="exportCSV('vehicles')" class="btn btn-secondary btn-sm"><i data-lucide="download" class="w-4 h-4"></i> Export</button>
+                                    <button onclick="openVehicleModal()" class="btn btn-secondary btn-sm"><i data-lucide="plus" class="w-4 h-4"></i> เพิ่ม</button>
+                                </div>
                             </div>
                             <ul id="list-vehicles" class="divide-y divide-slate-100 border border-slate-100 rounded-lg"></ul>
                         </div>
@@ -716,10 +735,12 @@
             const month = document.getElementById('filter-report-month').value; // YYYY-MM
             const userFilterEl = document.getElementById('filter-report-user');
             const teamFilterEl = document.getElementById('filter-report-team');
+            const deptFilterEl = document.getElementById('filter-report-department');
             
             if (appState.user.role !== ROLES.SALES) {
                 userFilterEl.classList.remove('hidden');
                 teamFilterEl.classList.remove('hidden');
+                deptFilterEl.classList.remove('hidden');
                 if (userFilterEl.options.length <= 1) {
                     const [{ data: users }, { data: teams }] = await Promise.all([
                         dbClient.from('users').select('id, name').eq('role', 'sales'),
@@ -731,8 +752,22 @@
             } else {
                 userFilterEl.classList.add('hidden');
                 teamFilterEl.classList.add('hidden');
+                deptFilterEl.classList.add('hidden');
             }
             let q = getBaseQuery('daily_reports').order('report_date', {ascending: false});
+            
+            if (deptFilterEl && deptFilterEl.value && appState.user.role !== ROLES.SALES) {
+                const { data: deptTeams } = await dbClient.from('teams').select('id').eq('department', deptFilterEl.value);
+                const deptTeamIds = deptTeams ? deptTeams.map(t => t.id) : [];
+                if (deptTeamIds.length > 0) {
+                    const { data: deptUsers } = await dbClient.from('users').select('id').in('team_id', deptTeamIds);
+                    const userIds = deptUsers ? deptUsers.map(u => u.id) : [];
+                    if (userIds.length > 0) q = q.in('user_id', userIds);
+                    else q = q.eq('id', '00000000-0000-0000-0000-000000000000');
+                } else {
+                    q = q.eq('id', '00000000-0000-0000-0000-000000000000');
+                }
+            }
             
             if (teamFilterEl && teamFilterEl.value && appState.user.role !== ROLES.SALES) {
                 const { data: teamUsers } = await dbClient.from('users').select('id').eq('team_id', teamFilterEl.value);
@@ -788,11 +823,13 @@
         async function loadFuels() {
             const userFilterEl = document.getElementById('filter-fuel-user');
             const teamFilterEl = document.getElementById('filter-fuel-team');
+            const deptFilterEl = document.getElementById('filter-fuel-department');
             const month = document.getElementById('filter-fuel-month')?.value || '';
 
             if (appState.user.role !== ROLES.SALES) {
                 if (userFilterEl) userFilterEl.classList.remove('hidden');
                 if (teamFilterEl) teamFilterEl.classList.remove('hidden');
+                if (deptFilterEl) deptFilterEl.classList.remove('hidden');
                 if (userFilterEl && userFilterEl.options.length <= 1) {
                     const [{ data: users }, { data: teams }] = await Promise.all([
                         dbClient.from('users').select('id, name').eq('role', 'sales'),
@@ -804,11 +841,25 @@
             } else {
                 if (userFilterEl) userFilterEl.classList.add('hidden');
                 if (teamFilterEl) teamFilterEl.classList.add('hidden');
+                if (deptFilterEl) deptFilterEl.classList.add('hidden');
             }
 
             let q = getBaseQuery('fuel_transactions')
                 .select('*, users(name, emp_code), vehicles(license_plate)')
                 .order('fuel_date', {ascending: false});
+
+            if (deptFilterEl && deptFilterEl.value && appState.user.role !== ROLES.SALES) {
+                const { data: deptTeams } = await dbClient.from('teams').select('id').eq('department', deptFilterEl.value);
+                const deptTeamIds = deptTeams ? deptTeams.map(t => t.id) : [];
+                if (deptTeamIds.length > 0) {
+                    const { data: deptUsers } = await dbClient.from('users').select('id').in('team_id', deptTeamIds);
+                    const userIds = deptUsers ? deptUsers.map(u => u.id) : [];
+                    if (userIds.length > 0) q = q.in('user_id', userIds);
+                    else q = q.eq('id', '00000000-0000-0000-0000-000000000000');
+                } else {
+                    q = q.eq('id', '00000000-0000-0000-0000-000000000000');
+                }
+            }
 
             if (teamFilterEl && teamFilterEl.value && appState.user.role !== ROLES.SALES) {
                 const { data: teamUsers } = await dbClient.from('users').select('id').eq('team_id', teamFilterEl.value);
@@ -868,14 +919,14 @@
         }
         // --- USERS ---
         async function loadUsers() {
-            const { data } = await dbClient.from('users').select('*, teams!fk_user_team(team_name), vehicles(license_plate)').order('created_at', {ascending: false});
+            const { data } = await dbClient.from('users').select('*, teams(team_name, department), vehicles(license_plate)').order('created_at', {ascending: false});
             const tbody = document.getElementById('table-users');
             tbody.innerHTML = data.map(u => `
                 <tr class="hover:bg-slate-50">
                     <td class="px-4 py-3">${u.name}</td>
                     <td class="px-4 py-3">${u.username}</td>
                     <td class="px-4 py-3 capitalize">${u.role}</td>
-                    <td class="px-4 py-3 text-xs">ทีม: ${u.teams?.team_name||'-'}<br>รถ: ${u.vehicles?.license_plate||'-'}</td>
+                    <td class="px-4 py-3 text-xs">ทีม: ${u.teams?.team_name||'-'} (${u.teams?.department||'-'})<br>รถ: ${u.vehicles?.license_plate||'-'}</td>
                     <td class="px-4 py-3 text-center">
                         <span class="px-2 py-1 rounded-full text-xs font-medium ${u.status==='active'?'bg-emerald-100 text-emerald-700':'bg-red-100 text-red-700'}">${u.status}</span>
                     </td>
@@ -917,7 +968,10 @@
             
             document.getElementById('list-teams').innerHTML = teams.map(t => `
                 <li class="px-4 py-3 flex justify-between items-center">
-                    <span>${t.team_name}</span>
+                    <div>
+                        <span class="font-medium">${t.team_name}</span>
+                        <span class="text-xs text-slate-500 block">แผนก: ${t.department || '-'}</span>
+                    </div>
                     <button onclick="deleteRecord('teams', '${t.id}')" class="text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                 </li>
             `).join('');
@@ -1471,6 +1525,14 @@
                 createModal('masterModal', id ? 'แก้ไขทีม' : 'เพิ่มทีม', `
                     <div class="space-y-4">
                         <div><label class="label">ชื่อทีม</label><input type="text" id="m-name" value="${data.team_name||''}" required class="input-field"></div>
+                        <div>
+                            <label class="label">แผนก</label>
+                            <select id="m-department" class="input-field">
+                                <option value="">-- ไม่ระบุแผนก --</option>
+                                <option value="ขายเครดิต" ${data.department === 'ขายเครดิต' ? 'selected' : ''}>ขายเครดิต</option>
+                                <option value="ขายหน่วยรถเงินสด" ${data.department === 'ขายหน่วยรถเงินสด' ? 'selected' : ''}>ขายหน่วยรถเงินสด</option>
+                            </select>
+                        </div>
                     </div>
                 `, 'บันทึก', 'submitMaster');
             } else if (table === 'vehicles') {
@@ -1512,7 +1574,10 @@
                     const pass = document.getElementById('m-pass').value;
                     if(pass) payload.password_hash = await hashPassword(pass);
                 } else if(editTable === 'teams') {
-                    payload = { team_name: document.getElementById('m-name').value };
+                    payload = { 
+                        team_name: document.getElementById('m-name').value,
+                        department: document.getElementById('m-department').value || null
+                    };
                 } else if(editTable === 'vehicles') {
                     payload = {
                         license_plate: document.getElementById('m-plate').value,
@@ -1545,35 +1610,77 @@
         // ==========================================
         // 6. Export CSV
         // ==========================================
-        function exportCSV(type) {
-            let data = type === 'daily_reports' ? appState.data.reports : appState.data.fuels;
-            if(!data || data.length === 0) return showToast('ไม่มีข้อมูลสำหรับ Export', 'error');
-            
+        async function exportCSV(type) {
+            let data = [];
             let csv = '';
-            if(type === 'daily_reports') {
-                csv = 'Date,EmpCode,User,Status,Area,Start,End,Distance,Sales,Visited,Approval\n';
-                data.forEach(r => {
-                    csv += `${r.report_date},"${r.users?.emp_code||''}","${r.users?.name}","${r.work_status}","${r.area||''}",${r.mileage_start||''},${r.mileage_end||''},${r.distance||''},${r.total_sales||''},${r.store_visited||''},"${r.approval_status}"\n`;
-                });
-            } else {
-                csv = 'Date,EmpCode,User,Vehicle,Mileage,ClaimType,DocumentNumber,Liters,Amount\n';
-                data.forEach(f => {
-                    const plate = f.vehicles?.license_plate || f.vehicle_id || '-';
-                    csv += `${f.fuel_date},"${f.users?.emp_code||''}","${f.users?.name}","${plate}",${f.mileage},"${f.claim_type||''}","${f.document_number||''}",${f.liters},${f.amount}\n`;
-                });
-            }
             
-            const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement("a");
-            const url = URL.createObjectURL(blob);
-            link.setAttribute("href", url);
-            link.setAttribute("download", `export_${type}_${new Date().getTime()}.csv`);
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            showToast('Export CSV สำเร็จ');
-            logAudit('EXPORT', type, null, 'Exported CSV');
+            showLoader();
+            try {
+                if(type === 'daily_reports') {
+                    data = appState.data.reports;
+                    if(!data || data.length === 0) throw new Error('ไม่มีข้อมูลสำหรับ Export');
+                    
+                    const { data: allUsers } = await dbClient.from('users').select('id, teams(department)');
+                    const userDeptMap = {};
+                    if(allUsers) allUsers.forEach(u => userDeptMap[u.id] = u.teams?.department || '');
+
+                    csv = 'Date,EmpCode,User,Department,Status,Area,Start,End,Distance,Sales,Visited,Approval\n';
+                    data.forEach(r => {
+                        const dept = userDeptMap[r.user_id] || '';
+                        csv += `${r.report_date},"${r.users?.emp_code||''}","${r.users?.name}","${dept}","${r.work_status}","${r.area||''}",${r.mileage_start||''},${r.mileage_end||''},${r.distance||''},${r.total_sales||''},${r.store_visited||''},"${r.approval_status}"\n`;
+                    });
+                } else if(type === 'fuel_transactions') {
+                    data = appState.data.fuels;
+                    if(!data || data.length === 0) throw new Error('ไม่มีข้อมูลสำหรับ Export');
+
+                    const { data: allUsers } = await dbClient.from('users').select('id, teams(department)');
+                    const userDeptMap = {};
+                    if(allUsers) allUsers.forEach(u => userDeptMap[u.id] = u.teams?.department || '');
+
+                    csv = 'Date,EmpCode,User,Department,Vehicle,Mileage,ClaimType,DocumentNumber,Liters,Amount\n';
+                    data.forEach(f => {
+                        const dept = userDeptMap[f.user_id] || '';
+                        const plate = f.vehicles?.license_plate || f.vehicle_id || '-';
+                        csv += `${f.fuel_date},"${f.users?.emp_code||''}","${f.users?.name}","${dept}","${plate}",${f.mileage},"${f.claim_type||''}","${f.document_number||''}",${f.liters},${f.amount}\n`;
+                    });
+                } else if(type === 'users') {
+                    const { data: users } = await dbClient.from('users').select('*, teams(team_name, department), vehicles(license_plate)').order('created_at', {ascending: false});
+                    if(!users || users.length === 0) throw new Error('ไม่มีข้อมูลผู้ใช้งาน');
+                    csv = 'EmpCode,Name,Role,Username,Department,Team,Vehicle,Status\n';
+                    users.forEach(u => {
+                        csv += `"${u.emp_code||''}","${u.name}","${u.role}","${u.username}","${u.teams?.department||''}","${u.teams?.team_name||''}","${u.vehicles?.license_plate||''}","${u.status}"\n`;
+                    });
+                } else if(type === 'teams') {
+                    const { data: teams } = await dbClient.from('teams').select('*').order('team_name', {ascending: true});
+                    if(!teams || teams.length === 0) throw new Error('ไม่มีข้อมูลทีม');
+                    csv = 'TeamID,TeamName,Department\n';
+                    teams.forEach(t => {
+                        csv += `"${t.id}","${t.team_name}","${t.department||''}"\n`;
+                    });
+                } else if(type === 'vehicles') {
+                    const { data: vehicles } = await dbClient.from('vehicles').select('*').order('license_plate', {ascending: true});
+                    if(!vehicles || vehicles.length === 0) throw new Error('ไม่มีข้อมูลรถยนต์');
+                    csv = 'VehicleID,LicensePlate\n';
+                    vehicles.forEach(v => {
+                        csv += `"${v.id}","${v.license_plate}"\n`;
+                    });
+                }
+
+                const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement("a");
+                const url = URL.createObjectURL(blob);
+                link.setAttribute("href", url);
+                link.setAttribute("download", `export_${type}_${new Date().getTime()}.csv`);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                showToast('Export CSV สำเร็จ');
+                logAudit('EXPORT', type, null, 'Exported CSV');
+            } catch (e) {
+                showToast(e.message, 'error');
+            }
+            hideLoader();
         }
 
         async function importCSV(e, type) {
