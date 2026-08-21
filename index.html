@@ -1001,7 +1001,7 @@
                     .eq('username', u)
                     .eq('password_hash', passHash)
                     .eq('status', 'active')
-                    .single();
+                    .maybeSingle();
                 if (error) {
                     console.error("Supabase API Error:", error);
                     throw new Error("DB Error: " + error.message);
