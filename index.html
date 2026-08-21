@@ -1236,7 +1236,12 @@
                 });
 
                 if (!response.ok) {
-                    showToast('ระบบตรวจสอบ AI ไม่พร้อมใช้งาน (อาจเป็นปัญหาที่ API Key)', 'error');
+                    if (response.status === 400 || response.status === 401 || response.status === 403) {
+                        localStorage.removeItem('gemini_api_key');
+                        showToast('API Key ไม่ถูกต้อง ระบบได้ลบออกแล้ว รบกวนลองใหม่อีกครั้ง', 'error');
+                    } else {
+                        showToast('ระบบตรวจสอบ AI ไม่พร้อมใช้งานในขณะนี้', 'error');
+                    }
                     return true;
                 }
 
