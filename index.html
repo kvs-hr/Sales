@@ -1498,14 +1498,14 @@
             
             let csv = '';
             if(type === 'daily_reports') {
-                csv = 'Date,User,Status,Area,Start,End,Distance,Sales,Visited,Approval\n';
+                csv = 'Date,EmpCode,User,Status,Area,Start,End,Distance,Sales,Visited,Approval\n';
                 data.forEach(r => {
-                    csv += `${r.report_date},"${r.users?.name}","${r.work_status}","${r.area||''}",${r.mileage_start||''},${r.mileage_end||''},${r.distance||''},${r.total_sales||''},${r.store_visited||''},"${r.approval_status}"\n`;
+                    csv += `${r.report_date},"${r.users?.emp_code||''}","${r.users?.name}","${r.work_status}","${r.area||''}",${r.mileage_start||''},${r.mileage_end||''},${r.distance||''},${r.total_sales||''},${r.store_visited||''},"${r.approval_status}"\n`;
                 });
             } else {
-                csv = 'Date,User,Vehicle,Mileage,Liters,Amount\n';
+                csv = 'Date,EmpCode,User,Vehicle,Mileage,Liters,Amount\n';
                 data.forEach(f => {
-                    csv += `${f.fuel_date},"${f.users?.name}","${f.vehicle_id}",${f.mileage},${f.liters},${f.amount}\n`;
+                    csv += `${f.fuel_date},"${f.users?.emp_code||''}","${f.users?.name}","${f.vehicle_id}",${f.mileage},${f.liters},${f.amount}\n`;
                 });
             }
             
