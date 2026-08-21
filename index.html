@@ -187,6 +187,7 @@
                             <thead class="bg-slate-50 text-slate-600 border-b border-slate-200">
                                 <tr>
                                     <th class="px-4 py-3">วันที่</th>
+                                    <th class="px-4 py-3">รหัสพนักงาน</th>
                                     <th class="px-4 py-3">พนักงาน</th>
                                     <th class="px-4 py-3">สถานะการทำงาน</th>
                                     <th class="px-4 py-3 text-right">ยอดขาย (฿)</th>
@@ -225,6 +226,7 @@
                             <thead class="bg-slate-50 text-slate-600 border-b border-slate-200">
                                 <tr>
                                     <th class="px-4 py-3">วันที่</th>
+                                    <th class="px-4 py-3">รหัสพนักงาน</th>
                                     <th class="px-4 py-3">พนักงาน</th>
                                     <th class="px-4 py-3">รถที่ใช้</th>
                                     <th class="px-4 py-3 text-right">จำนวนลิตร</th>
@@ -575,7 +577,7 @@
             hideLoader();
         }
         function getBaseQuery(table) {
-            let q = dbClient.from(table).select('*, users!inner(name, team_id)');
+            let q = dbClient.from(table).select('*, users!inner(name, team_id, emp_code)');
             if (appState.user.role === ROLES.SALES) {
                 q = q.eq('user_id', appState.user.id);
             } else if (appState.user.role === ROLES.SUP) {
@@ -758,6 +760,7 @@
             tbody.innerHTML = appState.data.reports.map(r => `
                 <tr class="hover:bg-slate-50">
                     <td class="px-4 py-3">${formatDate(r.report_date)}</td>
+                    <td class="px-4 py-3">${r.users?.emp_code || '-'}</td>
                     <td class="px-4 py-3">${r.users?.name || 'Unknown'}</td>
                     <td class="px-4 py-3">
                         <span class="px-2 py-1 rounded-full text-xs font-medium ${r.work_status === 'work' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'}">${r.work_status === 'work' ? 'ปฏิบัติงาน' : 'วันหยุด'}</span>
@@ -800,7 +803,7 @@
             }
 
             let q = getBaseQuery('fuel_transactions')
-                .select('*, users(name)')
+                .select('*, users(name, emp_code)')
                 .order('fuel_date', {ascending: false});
 
             if (teamFilterEl && teamFilterEl.value && appState.user.role !== ROLES.SALES) {
@@ -840,6 +843,7 @@
                 return `
                 <tr class="hover:bg-slate-50">
                     <td class="px-4 py-3">${formatDate(f.fuel_date)}</td>
+                    <td class="px-4 py-3">${f.users?.emp_code || '-'}</td>
                     <td class="px-4 py-3">${f.users?.name || '-'}</td>
                     <td class="px-4 py-3 font-medium">${licensePlate}</td>
                     <td class="px-4 py-3 text-right">${formatNumber(f.liters)}</td>
@@ -1376,7 +1380,10 @@
                 const currentPlate = currentVeh ? currentVeh.license_plate : '';
                 createModal('masterModal', id ? 'แก้ไขผู้ใช้งาน' : 'เพิ่มผู้ใช้งาน', `
                     <div class="space-y-4">
-                        <div><label class="label">ชื่อ-สกุล</label><input type="text" id="m-name" value="${data.name||''}" required class="input-field"></div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div><label class="label">รหัสพนักงาน</label><input type="text" id="m-emp-code" value="${data.emp_code||''}" class="input-field" placeholder="เช่น EMP001"></div>
+                            <div><label class="label">ชื่อ-สกุล</label><input type="text" id="m-name" value="${data.name||''}" required class="input-field"></div>
+                        </div>
                         <div><label class="label">Username</label><input type="text" id="m-username" value="${data.username||''}" required class="input-field"></div>
                         <div><label class="label">รหัสผ่าน ${id?'(เว้นว่างถ้าไม่เปลี่ยน)':''}</label><input type="password" id="m-pass" ${id?'':'required'} class="input-field"></div>
                         <div class="grid grid-cols-2 gap-4">
@@ -1441,6 +1448,7 @@
                         }
                     }
                     payload = {
+                        emp_code: document.getElementById('m-emp-code').value || null,
                         name: document.getElementById('m-name').value,
                         username: document.getElementById('m-username').value,
                         role: document.getElementById('m-role').value,
