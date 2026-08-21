@@ -803,7 +803,7 @@
             }
 
             let q = getBaseQuery('fuel_transactions')
-                .select('*, users(name, emp_code)')
+                .select('*, users(name, emp_code), vehicles(license_plate)')
                 .order('fuel_date', {ascending: false});
 
             if (teamFilterEl && teamFilterEl.value && appState.user.role !== ROLES.SALES) {
@@ -1554,7 +1554,8 @@
             } else {
                 csv = 'Date,EmpCode,User,Vehicle,Mileage,ClaimType,DocumentNumber,Liters,Amount\n';
                 data.forEach(f => {
-                    csv += `${f.fuel_date},"${f.users?.emp_code||''}","${f.users?.name}","${f.vehicle_id}",${f.mileage},"${f.claim_type||''}","${f.document_number||''}",${f.liters},${f.amount}\n`;
+                    const plate = f.vehicles?.license_plate || f.vehicle_id || '-';
+                    csv += `${f.fuel_date},"${f.users?.emp_code||''}","${f.users?.name}","${plate}",${f.mileage},"${f.claim_type||''}","${f.document_number||''}",${f.liters},${f.amount}\n`;
                 });
             }
             
