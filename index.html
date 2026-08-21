@@ -1208,10 +1208,9 @@
             try {
                 let apiKey = (window.ENV && window.ENV.GEMINI_API_KEY) || localStorage.getItem('gemini_api_key');
                 if (!apiKey) {
-                    apiKey = prompt("Please enter your Gemini API Key to use AI Receipt Scanning:\n(This will be saved securely in your browser)");
+                    apiKey = prompt("Please enter your Gemini API Key to use AI Receipt Scanning:\n(This will be saved securely in your browser)\n\n* หากกดยกเลิก ระบบจะบันทึกรูปปกติโดยไม่ใช้ AI ตรวจสอบ");
                     if (!apiKey) {
-                        showToast("AI Scanning cancelled (No API Key)", "error");
-                        return false;
+                        return true; // ข้ามการสแกนด้วย AI และยอมให้บันทึกผ่าน
                     }
                     localStorage.setItem('gemini_api_key', apiKey);
                 }
