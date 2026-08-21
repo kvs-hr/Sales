@@ -134,6 +134,11 @@
                         <div class="flex gap-2">
                             <input type="month" id="dash-month" class="input-field" onchange="loadDashboardData()">
                             <select id="dash-user" class="input-field hidden" onchange="loadDashboardData()"><option value="">-- พนักงานทั้งหมด --</option></select>
+                            <select id="dash-department" class="input-field hidden" onchange="loadDashboardData()">
+                                <option value="">-- แผนกทั้งหมด --</option>
+                                <option value="ขายเครดิต">ขายเครดิต</option>
+                                <option value="ขายหน่วยรถเงินสด">ขายหน่วยรถเงินสด</option>
+                            </select>
                             <select id="dash-team" class="input-field hidden" onchange="loadDashboardData()"><option value="">-- ทีมทั้งหมด --</option></select>
                             <button onclick="loadDashboardData()" class="btn btn-secondary btn-sm"><i data-lucide="refresh-cw" class="w-4 h-4"></i> รีเฟรช</button>
                         </div>
@@ -612,10 +617,12 @@
         async function loadDashboardData() {
             const dashUserEl = document.getElementById('dash-user');
             const dashTeamEl = document.getElementById('dash-team');
+            const dashDeptEl = document.getElementById('dash-department');
             const dashMonth = document.getElementById('dash-month').value;
             if (appState.user.role !== ROLES.SALES) {
                 dashUserEl.classList.remove('hidden');
                 dashTeamEl.classList.remove('hidden');
+                dashDeptEl.classList.remove('hidden');
                 if (dashUserEl.options.length <= 1) {
                     const [{ data: users }, { data: teams }] = await Promise.all([
                         dbClient.from('users').select('id, name').eq('role', 'sales'),
@@ -627,9 +634,30 @@
             } else {
                 dashUserEl.classList.add('hidden');
                 dashTeamEl.classList.add('hidden');
+                dashDeptEl.classList.add('hidden');
             }
             let qRep = getBaseQuery('daily_reports').order('report_date', {ascending: false});
             let qFuel = getBaseQuery('fuel_transactions').order('fuel_date', {ascending: false});
+            
+            if (dashDeptEl && dashDeptEl.value && appState.user.role !== ROLES.SALES) {
+                const { data: deptTeams } = await dbClient.from('teams').select('id').eq('department', dashDeptEl.value);
+                const deptTeamIds = deptTeams ? deptTeams.map(t => t.id) : [];
+                if (deptTeamIds.length > 0) {
+                    const { data: deptUsers } = await dbClient.from('users').select('id').in('team_id', deptTeamIds);
+                    const userIds = deptUsers ? deptUsers.map(u => u.id) : [];
+                    if (userIds.length > 0) {
+                        qRep = qRep.in('user_id', userIds);
+                        qFuel = qFuel.in('user_id', userIds);
+                    } else {
+                        qRep = qRep.eq('id', '00000000-0000-0000-0000-000000000000');
+                        qFuel = qFuel.eq('id', '00000000-0000-0000-0000-000000000000');
+                    }
+                } else {
+                    qRep = qRep.eq('id', '00000000-0000-0000-0000-000000000000');
+                    qFuel = qFuel.eq('id', '00000000-0000-0000-0000-000000000000');
+                }
+            }
+
             if (dashTeamEl && dashTeamEl.value && appState.user.role !== ROLES.SALES) {
                 const { data: teamUsers } = await dbClient.from('users').select('id').eq('team_id', dashTeamEl.value);
                 const userIds = teamUsers ? teamUsers.map(u => u.id) : [];
@@ -919,7 +947,7 @@
         }
         // --- USERS ---
         async function loadUsers() {
-            const { data } = await dbClient.from('users').select('*, teams(team_name, department), vehicles(license_plate)').order('created_at', {ascending: false});
+            const { data } = await dbClient.from('users').select('*, teams!fk_user_team(team_name, department), vehicles(license_plate)').order('created_at', {ascending: false});
             const tbody = document.getElementById('table-users');
             tbody.innerHTML = data.map(u => `
                 <tr class="hover:bg-slate-50">
@@ -1620,7 +1648,7 @@
                     data = appState.data.reports;
                     if(!data || data.length === 0) throw new Error('ไม่มีข้อมูลสำหรับ Export');
                     
-                    const { data: allUsers } = await dbClient.from('users').select('id, teams(department)');
+                    const { data: allUsers } = await dbClient.from('users').select('id, teams!fk_user_team(department)');
                     const userDeptMap = {};
                     if(allUsers) allUsers.forEach(u => userDeptMap[u.id] = u.teams?.department || '');
 
@@ -1633,7 +1661,7 @@
                     data = appState.data.fuels;
                     if(!data || data.length === 0) throw new Error('ไม่มีข้อมูลสำหรับ Export');
 
-                    const { data: allUsers } = await dbClient.from('users').select('id, teams(department)');
+                    const { data: allUsers } = await dbClient.from('users').select('id, teams!fk_user_team(department)');
                     const userDeptMap = {};
                     if(allUsers) allUsers.forEach(u => userDeptMap[u.id] = u.teams?.department || '');
 
@@ -1644,7 +1672,7 @@
                         csv += `${f.fuel_date},"${f.users?.emp_code||''}","${f.users?.name}","${dept}","${plate}",${f.mileage},"${f.claim_type||''}","${f.document_number||''}",${f.liters},${f.amount}\n`;
                     });
                 } else if(type === 'users') {
-                    const { data: users } = await dbClient.from('users').select('*, teams(team_name, department), vehicles(license_plate)').order('created_at', {ascending: false});
+                    const { data: users } = await dbClient.from('users').select('*, teams!fk_user_team(team_name, department), vehicles(license_plate)').order('created_at', {ascending: false});
                     if(!users || users.length === 0) throw new Error('ไม่มีข้อมูลผู้ใช้งาน');
                     csv = 'EmpCode,Name,Role,Username,Department,Team,Vehicle,Status\n';
                     users.forEach(u => {
