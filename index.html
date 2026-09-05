@@ -259,6 +259,105 @@
                     </div>
                 </div>
                 
+                <!-- Leaves View -->
+                <div id="view-leaves" class="view fade-in">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                        <h2 class="text-2xl font-bold text-slate-800">ระบบการลา (Leave Management)</h2>
+                        <div class="flex gap-2">
+                            <button onclick="exportCSV('leaves')" class="btn btn-secondary hidden" id="btn-export-leaves"><i data-lucide="download" class="w-4 h-4"></i> Export</button>
+                            <button onclick="openLeaveModal()" class="btn btn-primary" id="btn-add-leave"><i data-lucide="plus" class="w-4 h-4"></i> ยื่นใบลา</button>
+                        </div>
+                    </div>
+                    <div class="card p-4 mb-4 flex flex-wrap gap-4 items-center justify-between">
+                        <div class="flex gap-4 flex-wrap">
+                            <input type="month" id="filter-leave-month" class="input-field max-w-xs" onchange="loadLeaves()">
+                            <select id="filter-leave-status" class="input-field max-w-xs" onchange="loadLeaves()">
+                                <option value="">-- สถานะทั้งหมด --</option>
+                                <option value="pending">รออนุมัติ</option>
+                                <option value="approved">อนุมัติแล้ว</option>
+                                <option value="rejected">ปฏิเสธ</option>
+                            </select>
+                            <select id="filter-leave-user" class="input-field max-w-xs hidden" onchange="loadLeaves()">
+                                <option value="">-- พนักงานทั้งหมด --</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="card overflow-x-auto">
+                        <table class="w-full text-sm text-left whitespace-nowrap">
+                            <thead class="bg-slate-50 text-slate-600 border-b border-slate-200">
+                                <tr>
+                                    <th class="px-4 py-3">วันที่ยื่น</th>
+                                    <th class="px-4 py-3">พนักงาน</th>
+                                    <th class="px-4 py-3">ประเภทการลา</th>
+                                    <th class="px-4 py-3 text-center">เริ่ม - สิ้นสุด</th>
+                                    <th class="px-4 py-3">เหตุผล</th>
+                                    <th class="px-4 py-3 text-center">ไฟล์แนบ</th>
+                                    <th class="px-4 py-3 text-center">สถานะ</th>
+                                    <th class="px-4 py-3 text-center">ผู้อนุมัติ</th>
+                                    <th class="px-4 py-3 text-center">จัดการ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-leaves" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <!-- Attendance View -->
+                <div id="view-attendance" class="view fade-in">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                        <h2 class="text-2xl font-bold text-slate-800">บันทึกเวลาทำงาน (Time Attendance)</h2>
+                        <div class="flex gap-2">
+                            <input type="file" id="file-import-attendance" accept=".csv" class="hidden" onchange="importCSV(event, 'attendance')">
+                            <button onclick="document.getElementById('file-import-attendance').click()" class="btn btn-primary admin-only" id="btn-import-attendance"><i data-lucide="upload" class="w-4 h-4"></i> Import CSV</button>
+                        </div>
+                    </div>
+                    <div class="card p-4 mb-4 flex flex-wrap gap-4 items-center justify-between">
+                        <div class="flex gap-4 flex-wrap">
+                            <input type="month" id="filter-att-month" class="input-field max-w-xs" onchange="loadAttendance()">
+                            <select id="filter-att-user" class="input-field max-w-xs hidden" onchange="loadAttendance()">
+                                <option value="">-- พนักงานทั้งหมด --</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="card overflow-x-auto">
+                        <table class="w-full text-sm text-left whitespace-nowrap">
+                            <thead class="bg-slate-50 text-slate-500 font-medium">
+                                <tr>
+                                    <th class="px-4 py-3">วันที่</th>
+                                    <th class="px-4 py-3 text-center">สถานะ</th>
+                                    <th class="px-4 py-3">รหัสพนักงาน</th>
+                                    <th class="px-4 py-3">ชื่อ - นามสกุล</th>
+                                    <th class="px-4 py-3 text-center">เข้า - ออก</th>
+                                    <th class="px-4 py-3">หมายเหตุ</th>
+                                    <th class="px-4 py-3 text-center admin-only">จัดการ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-attendance" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Payslips View -->
+                <div id="view-payslips" class="view fade-in">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                        <h2 class="text-2xl font-bold text-slate-800">สลิปเงินเดือน (Payslips)</h2>
+                        <div class="flex gap-2">
+                            <input type="file" id="file-import-payslips" accept=".csv" class="hidden" onchange="importCSV(event, 'payslips')">
+                            <button onclick="document.getElementById('file-import-payslips').click()" class="btn btn-primary admin-only" id="btn-import-payslips"><i data-lucide="upload" class="w-4 h-4"></i> Import CSV</button>
+                        </div>
+                    </div>
+                    <div class="card p-4 mb-4 flex flex-wrap gap-4 items-center justify-between">
+                        <div class="flex gap-4 flex-wrap">
+                            <input type="month" id="filter-slip-month" class="input-field max-w-xs" onchange="loadPayslips()">
+                            <select id="filter-slip-user" class="input-field max-w-xs hidden" onchange="loadPayslips()">
+                                <option value="">-- พนักงานทั้งหมด --</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="list-payslips">
+                        <!-- Cards will be populated here -->
+                    </div>
+                </div>
+                
                 <!-- Users View (Admin) -->
                 <div id="view-users" class="view fade-in">
                     <div class="flex justify-between items-center mb-6">
@@ -377,7 +476,8 @@
                 teams: [],
                 vehicles: [],
                 reports: [],
-                fuels: []
+                fuels: [],
+                leaves: []
             },
             charts: {
                 sales: null,
@@ -394,6 +494,9 @@
             { id: 'dashboard', icon: 'layout-dashboard', label: 'Dashboard', roles: [ROLES.ADMIN, ROLES.EXEC, ROLES.SUP, ROLES.SALES] },
             { id: 'reports', icon: 'file-text', label: 'รายงานยอดขาย', roles: [ROLES.ADMIN, ROLES.SUP, ROLES.SALES] },
             { id: 'fuel', icon: 'fuel', label: 'บันทึกน้ำมัน', roles: [ROLES.ADMIN, ROLES.SUP, ROLES.SALES] },
+            { id: 'leaves', icon: 'calendar-clock', label: 'ระบบการลา', roles: [ROLES.ADMIN, ROLES.EXEC, ROLES.SUP, ROLES.SALES] },
+            { id: 'attendance', icon: 'clock', label: 'เวลาทำงาน', roles: [ROLES.ADMIN, ROLES.EXEC, ROLES.SUP, ROLES.SALES] },
+            { id: 'payslips', icon: 'receipt', label: 'สลิปเงินเดือน', roles: [ROLES.ADMIN, ROLES.EXEC, ROLES.SUP, ROLES.SALES] },
             { id: 'users', icon: 'users', label: 'จัดการผู้ใช้', roles: [ROLES.ADMIN] },
             { id: 'master', icon: 'database', label: 'ข้อมูลหลัก', roles: [ROLES.ADMIN] },
             { id: 'audit', icon: 'history', label: 'ประวัติระบบ', roles: [ROLES.ADMIN] },
@@ -595,6 +698,7 @@
                 if(viewId === 'dashboard') await loadDashboardData();
                 if(viewId === 'reports') await loadReports();
                 if(viewId === 'fuel') await loadFuels();
+                if(viewId === 'leaves') await loadLeaves();
                 if(viewId === 'users' && appState.user.role === ROLES.ADMIN) await loadUsers();
                 if(viewId === 'master' && appState.user.role === ROLES.ADMIN) await loadMasterData();
                 if(viewId === 'audit' && appState.user.role === ROLES.ADMIN) await loadAudit();
@@ -839,9 +943,8 @@
                     </td>
                     <td class="px-4 py-3 text-center flex justify-center gap-2">
                         <button onclick="viewReportImage('${r.mileage_end_image}')" class="text-slate-500 hover:text-indigo-600" title="รูปไมล์"><i data-lucide="image" class="w-4 h-4"></i></button>
-                        ${(appState.user.role === ROLES.ADMIN || r.user_id === appState.user.id) ? 
-                        `<button onclick="editReport('${r.id}')" class="text-indigo-400 hover:text-indigo-600" title="แก้ไข"><i data-lucide="edit" class="w-4 h-4"></i></button>
-                        <button onclick="deleteRecord('daily_reports', '${r.id}')" class="text-red-400 hover:text-red-600" title="ลบ"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
+                        ${(appState.user.role === ROLES.ADMIN || r.user_id === appState.user.id) ? `<button onclick="editReport('${r.id}')" class="text-indigo-400 hover:text-indigo-600" title="แก้ไข"><i data-lucide="edit" class="w-4 h-4"></i></button>` : ''}
+                        ${(appState.user.role === ROLES.ADMIN) ? `<button onclick="deleteRecord('daily_reports', '${r.id}')" class="text-red-400 hover:text-red-600" title="ลบ"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
                     </td>
                 </tr>
             `).join('') || `<tr><td colspan="7" class="text-center py-8 text-slate-500">ไม่พบข้อมูล</td></tr>`;
@@ -935,11 +1038,9 @@
                         <button onclick="viewReportImage('${f.receipt_image}')" class="text-slate-500 hover:text-indigo-600" title="ดูรูป"><i data-lucide="file-text" class="w-4 h-4"></i></button>
                     </td>
                     <td class="px-4 py-3 text-center">
-                        ${(appState.user.role === ROLES.ADMIN || f.user_id === appState.user.id) ? 
-                        `<div class="flex items-center justify-center gap-2">
-                            <button onclick="editFuel('${f.id}')" class="text-indigo-400 hover:text-indigo-600"><i data-lucide="edit" class="w-4 h-4"></i></button>
-                            <button onclick="deleteRecord('fuel_transactions', '${f.id}')" class="text-red-400 hover:text-red-600"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                        </div>` : ''}
+                        ${(appState.user.role === ROLES.ADMIN || f.user_id === appState.user.id) ? `<div class="flex items-center justify-center gap-2"><button onclick="editFuel('${f.id}')" class="text-indigo-400 hover:text-indigo-600"><i data-lucide="edit" class="w-4 h-4"></i></button>` : ''}
+                        ${(appState.user.role === ROLES.ADMIN) ? `<button onclick="deleteRecord('fuel_transactions', '${f.id}')" class="text-red-400 hover:text-red-600"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
+                        ${(appState.user.role === ROLES.ADMIN || f.user_id === appState.user.id) ? `</div>` : ''}
                     </td>
                 </tr>
             `}).join('') || `<tr><td colspan="7" class="text-center py-8 text-slate-500">ไม่พบข้อมูล</td></tr>`;
@@ -1046,9 +1147,9 @@
                         <div class="px-6 py-4 overflow-y-auto flex-1">
                             <form id="${id}-form" onsubmit="${submitFn}(event)">
                                 ${contentHTML}
-                                <div class="mt-6 pt-4 border-t border-slate-100 flex justify-end gap-3">
+                                <div class="mt-6 pt-4 border-t border-slate-100 flex justify-end gap-3 print:hidden">
                                     <button type="button" onclick="closeModal('${id}')" class="btn btn-secondary">ยกเลิก</button>
-                                    <button type="submit" class="btn btn-primary" id="${id}-submit">${submitLabel}</button>
+                                    ${submitLabel ? `<button type="submit" class="btn btn-primary" id="${id}-submit">${submitLabel}</button>` : ''}
                                 </div>
                             </form>
                         </div>
@@ -1505,12 +1606,14 @@
             }
             if(table === 'users') {
                 showLoader();
-                const [{data: allTeams}, {data: allVehicles}] = await Promise.all([
+                const [{data: allTeams}, {data: allVehicles}, {data: allManagers}] = await Promise.all([
                     dbClient.from('teams').select('id, team_name'),
-                    dbClient.from('vehicles').select('id, license_plate')
+                    dbClient.from('vehicles').select('id, license_plate'),
+                    dbClient.from('users').select('id, name')
                 ]);
                 hideLoader();
                 const teamOpts = (allTeams||[]).map(t => `<option value="${t.id}" ${data.team_id===t.id?'selected':''}>${t.team_name}</option>`).join('');
+                const managerOpts = (allManagers||[]).map(m => `<option value="${m.id}" ${data.manager_id===m.id?'selected':''}>${m.name}</option>`).join('');
                 const currentVeh = (allVehicles||[]).find(v => v.id === data.vehicle_id);
                 const currentPlate = currentVeh ? currentVeh.license_plate : '';
                 createModal('masterModal', id ? 'แก้ไขผู้ใช้งาน' : 'เพิ่มผู้ใช้งาน', `
@@ -1543,9 +1646,14 @@
                                     <option value="">-- ไม่ระบุ --</option>${teamOpts}
                                 </select>
                             </div>
-                            <div><label class="label">ทะเบียนรถยนต์ (ถ้ามี)</label>
-                                <input type="text" id="m-vehicle-plate" placeholder="เช่น 1กข 1234" value="${currentPlate}" class="input-field">
+                            <div><label class="label">หัวหน้าผู้อนุมัติ</label>
+                                <select id="m-manager" class="input-field">
+                                    <option value="">-- ไม่มี --</option>${managerOpts}
+                                </select>
                             </div>
+                        </div>
+                        <div><label class="label">ทะเบียนรถยนต์ (ถ้ามี)</label>
+                            <input type="text" id="m-vehicle-plate" placeholder="เช่น 1กข 1234" value="${currentPlate}" class="input-field">
                         </div>
                     </div>
                 `, 'บันทึก', 'submitMaster');
@@ -1597,6 +1705,7 @@
                         role: document.getElementById('m-role').value,
                         status: document.getElementById('m-status').value,
                         team_id: document.getElementById('m-team').value || null,
+                        manager_id: document.getElementById('m-manager').value || null,
                         vehicle_id: finalVehicleId
                     };
                     const pass = document.getElementById('m-pass').value;
@@ -1614,9 +1723,11 @@
                     };
                 }
                 if(editId) {
-                    await dbClient.from(editTable).update(payload).eq('id', editId);
+                    const { error } = await dbClient.from(editTable).update(payload).eq('id', editId);
+                    if (error) throw error;
                 } else {
-                    await dbClient.from(editTable).insert([payload]);
+                    const { error } = await dbClient.from(editTable).insert([payload]);
+                    if (error) throw error;
                 }
                 showToast('บันทึกข้อมูลสำเร็จ');
                 closeModal('masterModal');
@@ -1670,6 +1781,14 @@
                         const dept = userDeptMap[f.user_id] || '';
                         const plate = f.vehicles?.license_plate || f.vehicle_id || '-';
                         csv += `${f.fuel_date},"${f.users?.emp_code||''}","${f.users?.name}","${dept}","${plate}",${f.mileage},"${f.claim_type||''}","${f.document_number||''}",${f.liters},${f.amount}\n`;
+                    });
+                } else if(type === 'leaves') {
+                    data = appState.data.leaves;
+                    if(!data || data.length === 0) throw new Error('ไม่มีข้อมูลสำหรับ Export');
+                    
+                    csv = 'Date Submitted,EmpCode,User,Leave Type,Start Date,Start Time,End Date,End Time,Reason,Status,Approver,Approved At\n';
+                    data.forEach(l => {
+                        csv += `${formatDate(l.created_at)},"${l.users?.emp_code||''}","${l.users?.name||''}","${l.leave_type}","${formatDate(l.start_date)}","${l.start_time||''}","${formatDate(l.end_date)}","${l.end_time||''}","${(l.reason||'').replace(/"/g,'""')}","${l.status}","${l.approver_name||''}","${l.approved_at?formatDate(l.approved_at):''}"\n`;
                     });
                 } else if(type === 'users') {
                     const { data: users } = await dbClient.from('users').select('*, teams!fk_user_team(team_name, department), vehicles(license_plate)').order('created_at', {ascending: false});
@@ -1823,6 +1942,72 @@
                             };
                             await dbClient.from('fuel_transactions').insert([payload]);
                             successCount++;
+                        } else if (type === 'attendance') {
+                            // Date, EmpCode, TimeIn, TimeOut, LateMinutes, Status, Remark
+                            const empCode = row[1];
+                            if(!empCode) continue;
+                            const { data: userData } = await dbClient.from('users').select('id').eq('emp_code', empCode).maybeSingle();
+                            if(!userData) { failCount++; continue; }
+
+                            const payload = {
+                                user_id: userData.id,
+                                work_date: row[0],
+                                time_in: row[2] || null,
+                                time_out: row[3] || null,
+                                late_minutes: row[4] ? parseInt(row[4]) : 0,
+                                status: row[5] || 'present',
+                                remark: row[6] || ''
+                            };
+                            await dbClient.from('time_attendance').upsert(payload, { onConflict: 'user_id, work_date' });
+                            successCount++;
+                        } else if (type === 'payslips') {
+                            const empCode = row[0];
+                            const month = row[1];
+                            if(!empCode || !month) continue;
+                            const { data: userData } = await dbClient.from('users').select('id').eq('emp_code', empCode).maybeSingle();
+                            if(!userData) { failCount++; continue; }
+
+                            const total_income = parseFloat(row[2]?.replace(/,/g, '') || 0);
+                            const total_deduction = parseFloat(row[3]?.replace(/,/g, '') || 0);
+                            const net_salary = parseFloat(row[4]?.replace(/,/g, '') || 0);
+                            
+                            let income_details = {};
+                            if (row[5]) {
+                                const parts = row[5].split('|');
+                                parts.forEach(p => {
+                                    const [k, v] = p.split('=');
+                                    if(k && v) {
+                                        let cleanV = v.replace(/,/g, '').trim();
+                                        let parsed = parseFloat(cleanV);
+                                        income_details[k.trim()] = (isNaN(parsed) || cleanV.includes('/')) ? v.trim() : parsed;
+                                    }
+                                });
+                            }
+                            
+                            let deduction_details = {};
+                            if (row[6]) {
+                                const parts = row[6].split('|');
+                                parts.forEach(p => {
+                                    const [k, v] = p.split('=');
+                                    if(k && v) {
+                                        let cleanV = v.replace(/,/g, '').trim();
+                                        let parsed = parseFloat(cleanV);
+                                        deduction_details[k.trim()] = (isNaN(parsed) || cleanV.includes('/')) ? v.trim() : parsed;
+                                    }
+                                });
+                            }
+
+                            const payload = {
+                                user_id: userData.id,
+                                slip_month: month,
+                                total_income: total_income,
+                                total_deduction: total_deduction,
+                                net_salary: net_salary,
+                                income_details: income_details,
+                                deduction_details: deduction_details
+                            };
+                            await dbClient.from('payslips').upsert(payload, { onConflict: 'user_id, slip_month' });
+                            successCount++;
                         }
                     } catch(err) {
                         failCount++;
@@ -1832,7 +2017,9 @@
                 
                 showToast(`นำเข้าข้อมูลสำเร็จ ${successCount} รายการ (ล้มเหลว ${failCount})`);
                 if(type === 'daily_reports') loadReports();
-                else loadFuels();
+                else if(type === 'fuel_transactions') loadFuels();
+                else if(type === 'attendance') loadAttendance();
+                else if(type === 'payslips') loadPayslips();
                 
             } catch(e) {
                 console.error("Import CSV Error", e);
@@ -1840,6 +2027,415 @@
             }
             e.target.value = ''; // Reset file input
             hideLoader();
+        }
+        // ==========================================
+        // 7. Leave Management
+        // ==========================================
+        async function loadLeaves() {
+            const statusFilter = document.getElementById('filter-leave-status').value;
+            const monthFilter = document.getElementById('filter-leave-month').value;
+            const userFilter = document.getElementById('filter-leave-user')?.value;
+            
+            let q = dbClient.from('leave_requests').select('*, users(emp_code, name)').order('start_date', {ascending: true});
+            
+            const userFilterEl = document.getElementById('filter-leave-user');
+            if (appState.user.role === ROLES.ADMIN || appState.user.role === ROLES.EXEC) {
+                if (userFilterEl) userFilterEl.classList.remove('hidden');
+                const btnExport = document.getElementById('btn-export-leaves');
+                if (btnExport) btnExport.classList.remove('hidden');
+                
+                if (userFilterEl && userFilterEl.options.length <= 1) {
+                    let uq = dbClient.from('users').select('id, emp_code, name');
+                    const { data: users } = await uq;
+                    if (users) {
+                        users.forEach(u => {
+                            const label = u.emp_code ? `${u.emp_code} ${u.name}` : u.name;
+                            userFilterEl.insertAdjacentHTML('beforeend', `<option value="${u.id}">${label}</option>`);
+                        });
+                    }
+                }
+            }
+
+            if (appState.user.role !== ROLES.ADMIN && appState.user.role !== ROLES.EXEC) {
+                q = q.eq('user_id', appState.user.id);
+            } else if (userFilter) {
+                q = q.eq('user_id', userFilter);
+            }
+            
+            if (statusFilter) {
+                q = q.eq('status', statusFilter);
+            }
+            if (monthFilter) {
+                const [yyyy, mm] = monthFilter.split('-');
+                
+                // When we construct a Date, JavaScript handles month rollover natively
+                // Note: JavaScript months are 0-indexed (0=Jan, 11=Dec)
+                const startDateObj = new Date(Date.UTC(parseInt(yyyy), parseInt(mm) - 2, 26));
+                const endDateObj = new Date(Date.UTC(parseInt(yyyy), parseInt(mm) - 1, 25, 23, 59, 59));
+                
+                const startDate = startDateObj.toISOString().substring(0,10);
+                const endDate = endDateObj.toISOString().substring(0,10);
+                
+                q = q.gte('start_date', startDate).lte('start_date', endDate);
+            }
+            
+            const { data } = await q;
+            appState.data.leaves = data || [];
+            
+            const tbody = document.getElementById('table-leaves');
+            tbody.innerHTML = appState.data.leaves.map(l => `
+                <tr class="hover:bg-slate-50">
+                    <td class="px-4 py-3">${formatDate(l.created_at)}</td>
+                    <td class="px-4 py-3">${l.users?.emp_code ? l.users.emp_code + ' ' : ''}${l.users?.name || 'Unknown'}</td>
+                    <td class="px-4 py-3">${l.leave_type}</td>
+                    <td class="px-4 py-3 text-center">
+                        ${formatDate(l.start_date)} ${l.start_time ? l.start_time.substring(0,5) : ''}<br>
+                        - ${formatDate(l.end_date)} ${l.end_time ? l.end_time.substring(0,5) : ''}
+                    </td>
+                    <td class="px-4 py-3 max-w-[200px] truncate" title="${l.reason||''}">${l.reason||'-'}</td>
+                    <td class="px-4 py-3 text-center">
+                        ${l.attachment_url ? `<a href="${l.attachment_url}" target="_blank" class="text-indigo-600 hover:underline"><i data-lucide="file-text" class="w-4 h-4 inline"></i></a>` : '-'}
+                    </td>
+                    <td class="px-4 py-3 text-center">
+                        <span class="px-2 py-1 rounded-full text-xs font-medium ${
+                            l.status === 'approved' ? 'bg-emerald-100 text-emerald-700' :
+                            l.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                            'bg-amber-100 text-amber-700'
+                        }">${
+                            l.status === 'approved' ? 'อนุมัติแล้ว' :
+                            l.status === 'rejected' ? 'ปฏิเสธ' : 'รออนุมัติ'
+                        }</span>
+                    </td>
+                    <td class="px-4 py-3 text-center text-xs">
+                        ${l.approver_name ? `${l.approver_name}<br><span class="text-slate-400">${formatDate(l.approved_at)}</span>` : '-'}
+                    </td>
+                    <td class="px-4 py-3 text-center">
+                        ${(appState.user.role === ROLES.ADMIN || appState.user.role === ROLES.EXEC) && l.status === 'pending' ? `
+                            <button onclick="updateLeaveStatus('${l.id}', 'approved')" class="text-emerald-500 hover:text-emerald-700 mx-1" title="อนุมัติ"><i data-lucide="check-circle" class="w-4 h-4"></i></button>
+                            <button onclick="updateLeaveStatus('${l.id}', 'rejected')" class="text-red-500 hover:text-red-700 mx-1" title="ปฏิเสธ"><i data-lucide="x-circle" class="w-4 h-4"></i></button>
+                        ` : ''}
+                        ${(appState.user.role === ROLES.ADMIN) || (appState.user.id === l.user_id && l.status === 'pending') ? `
+                            <button onclick="deleteRecord('leave_requests', '${l.id}')" class="text-slate-500 hover:text-red-600 mx-1" title="ลบ/ยกเลิก"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                        ` : ''}
+                    </td>
+                </tr>
+            `).join('') || `<tr><td colspan="7" class="text-center py-8 text-slate-500">ไม่พบข้อมูลการลา</td></tr>`;
+            lucide.createIcons();
+        }
+
+        function openLeaveModal() {
+            createModal('leaveModal', 'ยื่นใบลา', `
+                <div class="space-y-4">
+                    <div>
+                        <label class="label">ประเภทการลา</label>
+                        <select id="l-type" class="input-field" required>
+                            <option value="">-- เลือกประเภทการลา --</option>
+                            <option value="ลาป่วย">ลาป่วย</option>
+                            <option value="ลากิจ">ลากิจ</option>
+                            <option value="ลาพักร้อน">ลาพักร้อน</option>
+                            <option value="ลาอื่นๆ">ลาอื่นๆ</option>
+                        </select>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div><label class="label">วันที่เริ่มลา</label><input type="date" id="l-start" class="input-field" required></div>
+                        <div><label class="label">เวลาเริ่ม (ถ้ามี)</label><input type="time" id="l-start-time" class="input-field"></div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div><label class="label">ถึงวันที่</label><input type="date" id="l-end" class="input-field" required></div>
+                        <div><label class="label">เวลาสิ้นสุด (ถ้ามี)</label><input type="time" id="l-end-time" class="input-field"></div>
+                    </div>
+                    <div>
+                        <label class="label">เหตุผลการลา</label>
+                        <textarea id="l-reason" class="input-field h-24" placeholder="ระบุเหตุผลการลา..."></textarea>
+                    </div>
+                    <div>
+                        <label class="label">แนบไฟล์เอกสาร/ใบรับรองแพทย์ (ถ้ามี)</label>
+                        <input type="file" id="l-attachment" accept="image/*,.pdf" class="input-field">
+                    </div>
+                </div>
+            `, 'ส่งคำขอลา', 'submitLeave');
+        }
+
+        async function submitLeave(e) {
+            e.preventDefault();
+            showLoader();
+            try {
+                const payload = {
+                    user_id: appState.user.id,
+                    leave_type: document.getElementById('l-type').value,
+                    start_date: document.getElementById('l-start').value,
+                    start_time: document.getElementById('l-start-time').value || null,
+                    end_date: document.getElementById('l-end').value,
+                    end_time: document.getElementById('l-end-time').value || null,
+                    reason: document.getElementById('l-reason').value
+                };
+                
+                const fileInput = document.getElementById('l-attachment');
+                if (fileInput && fileInput.files[0]) {
+                    const file = fileInput.files[0];
+                    const fileExt = file.name.split('.').pop();
+                    const fileName = `leaves/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+                    const { error: uploadError } = await dbClient.storage.from('img').upload(fileName, file);
+                    if (uploadError) throw new Error('อัปโหลดไฟล์ล้มเหลว: ' + uploadError.message);
+                    const { data: publicUrlData } = dbClient.storage.from('img').getPublicUrl(fileName);
+                    payload.attachment_url = publicUrlData.publicUrl;
+                }
+                
+                if(new Date(payload.start_date) > new Date(payload.end_date)) {
+                    throw new Error('วันที่เริ่มต้นต้องไม่มากกว่าวันที่สิ้นสุด');
+                }
+
+                const { error } = await dbClient.from('leave_requests').insert([payload]);
+                if (error) throw error;
+                showToast('ยื่นใบลาสำเร็จ');
+                closeModal('leaveModal');
+                logAudit('CREATE', 'leave_requests', null, 'Submitted a leave request');
+                loadLeaves();
+            } catch(err) {
+                showToast(err.message, 'error');
+            }
+            hideLoader();
+        }
+
+        async function updateLeaveStatus(id, status) {
+            if(!confirm(`ยืนยันการ${status === 'approved' ? 'อนุมัติ' : 'ปฏิเสธ'}การลานี้?`)) return;
+            showLoader();
+            try {
+                const updateData = { 
+                    status: status,
+                    approver_name: appState.user.name,
+                    approved_at: new Date().toISOString()
+                };
+                const { error } = await dbClient.from('leave_requests').update(updateData).eq('id', id);
+                if (error) throw error;
+                showToast('อัปเดตสถานะสำเร็จ');
+                logAudit('UPDATE', 'leave_requests', id, `Updated leave status to ${status}`);
+                loadLeaves();
+            } catch(err) {
+                showToast(err.message, 'error');
+            }
+            hideLoader();
+        }
+        
+        // ==========================================
+        // 8. Attendance & Payslips (Phase 2)
+        // ==========================================
+        async function loadAttendance() {
+            const monthFilter = document.getElementById('filter-att-month').value;
+            const userFilter = document.getElementById('filter-att-user')?.value;
+            const userFilterEl = document.getElementById('filter-att-user');
+            
+            let q = dbClient.from('time_attendance').select('*, users(emp_code, name)').order('work_date', {ascending: true});
+            
+            if (appState.user.role === ROLES.ADMIN || appState.user.role === ROLES.EXEC) {
+                if (userFilterEl) userFilterEl.classList.remove('hidden');
+                if (userFilterEl && userFilterEl.options.length <= 1) {
+                    let uq = dbClient.from('users').select('id, emp_code, name');
+                    const { data: users } = await uq;
+                    if (users) {
+                        users.forEach(u => {
+                            const label = u.emp_code ? `${u.emp_code} ${u.name}` : u.name;
+                            userFilterEl.insertAdjacentHTML('beforeend', `<option value="${u.id}">${label}</option>`);
+                        });
+                    }
+                }
+            }
+
+            if (appState.user.role !== ROLES.ADMIN && appState.user.role !== ROLES.EXEC) {
+                q = q.eq('user_id', appState.user.id);
+            } else if (userFilter) {
+                q = q.eq('user_id', userFilter);
+            }
+
+            if (monthFilter) {
+                const [yyyy, mm] = monthFilter.split('-');
+                
+                const startDateObj = new Date(Date.UTC(parseInt(yyyy), parseInt(mm) - 2, 26));
+                const endDateObj = new Date(Date.UTC(parseInt(yyyy), parseInt(mm) - 1, 25, 23, 59, 59));
+                
+                const startDate = startDateObj.toISOString().substring(0,10);
+                const endDate = endDateObj.toISOString().substring(0,10);
+                
+                q = q.gte('work_date', startDate).lte('work_date', endDate);
+            }
+
+            const { data } = await q;
+            appState.data.attendance = data || [];
+            
+            const tbody = document.getElementById('table-attendance');
+            tbody.innerHTML = appState.data.attendance.map(a => `
+                <tr class="hover:bg-slate-50 text-sm">
+                    <td class="px-4 py-1">${formatDate(a.work_date)}</td>
+                    <td class="px-4 py-1 text-center">
+                        <span class="px-2 py-0.5 rounded-full text-xs font-medium ${a.status === 'วันทำงาน' || a.status === 'present' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-700'}">${a.status === 'present' ? 'วันทำงาน' : (a.status || '-')}</span>
+                    </td>
+                    <td class="px-4 py-1">${a.users?.emp_code || '-'}</td>
+                    <td class="px-4 py-1">${a.users?.name || 'Unknown'}</td>
+                    <td class="px-4 py-1 text-center">
+                        ${a.time_in ? a.time_in.substring(0,5) : '-'} - ${a.time_out ? a.time_out.substring(0,5) : '-'}
+                    </td>
+                    <td class="px-4 py-1 max-w-[200px] truncate" title="${a.remark||''}">${a.remark||'-'}</td>
+                    <td class="px-4 py-1 text-center admin-only">
+                        ${appState.user.role === ROLES.ADMIN ? `<button onclick="deleteRecord('time_attendance', '${a.id}')" class="text-red-400 hover:text-red-600"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
+                    </td>
+                </tr>
+            `).join('') || `<tr><td colspan="7" class="text-center py-8 text-slate-500">ไม่มีข้อมูล</td></tr>`;
+            lucide.createIcons();
+        }
+
+        async function loadPayslips() {
+            const monthFilter = document.getElementById('filter-slip-month').value;
+            const userFilter = document.getElementById('filter-slip-user')?.value;
+            const userFilterEl = document.getElementById('filter-slip-user');
+            
+            let q = dbClient.from('payslips').select('*, users(emp_code, name)').order('slip_month', {ascending: false});
+            
+            if (appState.user.role === ROLES.ADMIN || appState.user.role === ROLES.EXEC) {
+                if (userFilterEl) userFilterEl.classList.remove('hidden');
+                if (userFilterEl && userFilterEl.options.length <= 1) {
+                    let uq = dbClient.from('users').select('id, emp_code, name');
+                    const { data: users } = await uq;
+                    if (users) {
+                        users.forEach(u => {
+                            const label = u.emp_code ? `${u.emp_code} ${u.name}` : u.name;
+                            userFilterEl.insertAdjacentHTML('beforeend', `<option value="${u.id}">${label}</option>`);
+                        });
+                    }
+                }
+            }
+
+            if (appState.user.role !== ROLES.ADMIN && appState.user.role !== ROLES.EXEC) {
+                q = q.eq('user_id', appState.user.id);
+            } else if (userFilter) {
+                q = q.eq('user_id', userFilter);
+            }
+            if (monthFilter) q = q.eq('slip_month', monthFilter);
+
+            const { data } = await q;
+            appState.data.payslips = data || [];
+            
+            const list = document.getElementById('list-payslips');
+            list.innerHTML = appState.data.payslips.map(p => `
+                <div class="card p-4 flex flex-col justify-between hover:shadow-md transition-shadow">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <h3 class="font-bold text-slate-800">เดือน ${p.slip_month}</h3>
+                            <p class="text-sm text-slate-500">${p.users?.emp_code ? p.users.emp_code + ' ' : ''}${p.users?.name || 'Unknown'}</p>
+                        </div>
+                        <div class="bg-indigo-100 text-indigo-700 p-2 rounded-lg">
+                            <i data-lucide="receipt" class="w-5 h-5"></i>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <div class="flex justify-between text-sm mb-1">
+                            <span class="text-slate-500">รายรับสุทธิ</span>
+                            <span class="font-bold text-emerald-600">฿${parseFloat(p.net_salary||0).toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="viewPayslip('${p.id}')" class="btn btn-primary w-full"><i data-lucide="eye" class="w-4 h-4"></i> ดูสลิป</button>
+                        ${appState.user.role === ROLES.ADMIN ? `<button onclick="deleteRecord('payslips', '${p.id}')" class="btn btn-secondary text-red-500 px-3"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
+                    </div>
+                </div>
+            `).join('') || `<div class="col-span-full text-center py-8 text-slate-500">ไม่มีข้อมูล</div>`;
+            lucide.createIcons();
+        }
+
+        function viewPayslip(id) {
+            const slip = appState.data.payslips.find(p => p.id === id);
+            if(!slip) return;
+            
+            const inc = slip.income_details || {};
+            const ded = slip.deduction_details || {};
+            
+            const INCOME_ORDER = ['เงินเดือน', 'OT (นาที)', 'เงินได้ OT', 'Incentive', 'KPI คงที่', 'KPI วันทำงาน', 'KPI ผลงาน', 'ค่าโทรศัพท์', 'ค่าเบี้ยเลี้ยง', 'สวัสดิการอื่น ๆ', 'เงินได้ - อื่นๆ1', 'ค่าสึกหรอ', 'คืนเงินค้ำ', 'คืนเงินค้ำ*ลาออก'];
+            const DEDUCT_ORDER = ['ประกันสังคม', 'ขาดงาน(วัน)', 'หัก ขาดงาน', 'ลากิจ(วัน)', 'หัก ลากิจ', 'ลากิจ(ชม.)', 'หัก ลากิจ.1', 'ลาป่วย(วัน)', 'หัก ลาป่วย', 'ลาป่วย(ชม.)', 'หัก ลาป่วย.1', 'สาย (นาที)', 'หักสาย >30', 'เงินกู้ยืม', 'งวดเงินค้ำ', 'หัก เงินค้ำ', 'หัก กยศ.', 'ออก CN บิล', '<80%', 'ณ ที่จ่าย', 'ประกันซื่อสัตย์', 'หัก เงินสะสม', 'ค่าปรับจราจร', 'หัก สต็อค', 'หัก อื่นๆ'];
+            
+            const getSortedKeys = (obj, order) => {
+                const keys = Object.keys(obj);
+                const sorted = [];
+                order.forEach(k => { if(keys.includes(k)) sorted.push(k); });
+                keys.forEach(k => { if(!order.includes(k)) sorted.push(k); });
+                return sorted;
+            };
+
+            const isNonMoney = (k) => k === 'งวดเงินค้ำ' || k.includes('(นาที)') || k.includes('(วัน)') || k.includes('(ชม.)');
+
+            const formatVal = (k, v) => {
+                if (k === 'งวดเงินค้ำ' || typeof v === 'string') return v || '-';
+                return isNonMoney(k) ? parseFloat(v||0).toString() : parseFloat(v||0).toLocaleString('en-US', {minimumFractionDigits: 2});
+            };
+
+            const incHtml = getSortedKeys(inc, INCOME_ORDER).map(k => `
+                <div class="flex justify-between text-sm py-1 border-b border-slate-100 last:border-0">
+                    <span class="text-slate-600">${k}</span>
+                    <span class="font-medium">${formatVal(k, inc[k])}</span>
+                </div>
+            `).join('');
+            
+            const dedHtml = getSortedKeys(ded, DEDUCT_ORDER).map(k => {
+                const colorClass = isNonMoney(k) ? 'text-slate-800' : 'text-red-500';
+                return `
+                <div class="flex justify-between text-sm py-1 border-b border-slate-100 last:border-0">
+                    <span class="text-slate-600">${k}</span>
+                    <span class="font-medium ${colorClass}">${formatVal(k, ded[k])}</span>
+                </div>
+                `;
+            }).join('');
+
+            createModal('slipModal', 'สลิปเงินเดือน (Digital Payslip)', `
+                <div class="bg-white p-6 border rounded-lg print:border-0 print:shadow-none" id="print-area">
+                    <div class="text-center mb-6">
+                        <h2 class="text-xl font-bold">KVS Distribution Center</h2>
+                        <p class="text-slate-500">ใบแจ้งเงินเดือน งวดเดือน: ${slip.slip_month}</p>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 mb-6 text-sm bg-slate-50 p-4 rounded-lg">
+                        <div><span class="text-slate-500">รหัสพนักงาน:</span> ${slip.users?.emp_code||'-'}</div>
+                        <div><span class="text-slate-500">ชื่อ-นามสกุล:</span> ${slip.users?.name||'-'}</div>
+                    </div>
+                    
+                    <div class="grid md:grid-cols-2 gap-8 mb-6">
+                        <div>
+                            <h4 class="font-bold text-emerald-600 mb-3 border-b pb-2">รายได้ (Income)</h4>
+                            ${incHtml}
+                            <div class="flex justify-between text-sm py-2 mt-2 font-bold bg-emerald-50 px-2 rounded">
+                                <span>รวมรายได้</span>
+                                <span>${parseFloat(slip.total_income||0).toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-red-600 mb-3 border-b pb-2">รายการหัก (Deductions)</h4>
+                            ${dedHtml}
+                            <div class="flex justify-between text-sm py-2 mt-2 font-bold bg-red-50 px-2 rounded">
+                                <span>รวมรายการหัก</span>
+                                <span>${parseFloat(slip.total_deduction||0).toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-between items-center p-4 bg-indigo-50 rounded-lg">
+                        <span class="font-bold text-lg text-indigo-900">รายรับสุทธิ (Net Salary)</span>
+                        <span class="font-bold text-2xl text-indigo-700">฿${parseFloat(slip.net_salary||0).toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                    </div>
+                </div>
+                <div class="mt-4 flex justify-end">
+                    <button onclick="window.print()" class="btn btn-primary"><i data-lucide="printer" class="w-4 h-4"></i> พิมพ์สลิป</button>
+                </div>
+            `);
+            if (!document.getElementById('print-styles')) {
+                const style = document.createElement('style');
+                style.id = 'print-styles';
+                style.innerHTML = `
+                    @media print {
+                        body * { visibility: hidden; }
+                        #print-area, #print-area * { visibility: visible; }
+                        #print-area { position: absolute; left: 0; top: 0; width: 100%; }
+                        .modal-container { background: transparent !important; }
+                        .modal { box-shadow: none !important; }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
         }
 
         // Initialize App on load
