@@ -258,7 +258,213 @@
                         </table>
                     </div>
                 </div>
-                
+                <!-- Cash Van View (หน่วยรถเงินสด) -->
+                <div id="view-cashvan" class="view fade-in">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                        <div>
+                            <h2 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
+                                <i data-lucide="truck" class="w-7 h-7 text-indigo-600"></i> หน่วยรถเงินสด (Cash Van Closing)
+                            </h2>
+                            <p class="text-sm text-slate-500 mt-1">ตรวจสอบสถานะการนำรถเข้าจอดศูนย์ และการแจ้งโอนเงินสดประจำวัน</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="exportCSV('cashvan')" class="btn btn-secondary"><i data-lucide="download" class="w-4 h-4"></i> Export</button>
+                            <button onclick="loadCashVanData()" class="btn btn-secondary"><i data-lucide="refresh-cw" class="w-4 h-4"></i> รีเฟรช</button>
+                        </div>
+                    </div>
+
+                    <!-- Summary KPI Cards -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" id="cashvan-kpis">
+                        <div class="card p-4 bg-gradient-to-br from-emerald-50 to-white border-emerald-100">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-xs font-semibold text-emerald-700 uppercase tracking-wider">นำรถเข้าจอดแล้ว</span>
+                                <div class="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center"><i data-lucide="parking-circle" class="w-4 h-4"></i></div>
+                            </div>
+                            <h3 class="text-2xl font-bold text-slate-800" id="kpi-cashvan-parked">0 คัน</h3>
+                            <p class="text-xs text-slate-500 mt-1" id="kpi-cashvan-unparked">ค้างจอด: 0 คัน</p>
+                        </div>
+                        <div class="card p-4 bg-gradient-to-br from-blue-50 to-white border-blue-100">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-xs font-semibold text-blue-700 uppercase tracking-wider">ยอดขายประจำวัน</span>
+                                <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center"><i data-lucide="trending-up" class="w-4 h-4"></i></div>
+                            </div>
+                            <h3 class="text-2xl font-bold text-slate-800" id="kpi-cashvan-sales">฿0</h3>
+                            <p class="text-xs text-slate-500 mt-1" id="kpi-cashvan-sellers">จากรายงานยอดขาย</p>
+                        </div>
+                        <div class="card p-4 bg-gradient-to-br from-indigo-50 to-white border-indigo-100">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-xs font-semibold text-indigo-700 uppercase tracking-wider">แจ้งโอนเงินแล้ว</span>
+                                <div class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center"><i data-lucide="check-circle-2" class="w-4 h-4"></i></div>
+                            </div>
+                            <h3 class="text-2xl font-bold text-slate-800 text-indigo-600" id="kpi-cashvan-transferred">฿0</h3>
+                            <p class="text-xs text-slate-500 mt-1" id="kpi-cashvan-transfer-count">แจ้งโอน: 0 คน</p>
+                        </div>
+                        <div class="card p-4 bg-gradient-to-br from-amber-50 to-white border-amber-100">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-xs font-semibold text-amber-700 uppercase tracking-wider">ยอดค้างโอน</span>
+                                <div class="w-8 h-8 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center"><i data-lucide="alert-circle" class="w-4 h-4"></i></div>
+                            </div>
+                            <h3 class="text-2xl font-bold text-slate-800 text-amber-600" id="kpi-cashvan-pending">฿0</h3>
+                            <p class="text-xs text-slate-500 mt-1" id="kpi-cashvan-pending-count">ค้างโอน: 0 คน</p>
+                        </div>
+                    </div>
+
+                    <!-- Filter Bar -->
+                    <div class="card p-4 mb-4 flex flex-wrap gap-4 items-center justify-between">
+                        <div class="flex gap-4 flex-wrap items-center">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-500 mb-1">เลือกวันที่</label>
+                                <input type="date" id="filter-cashvan-date" class="input-field max-w-xs" onchange="loadCashVanData()">
+                            </div>
+                            <div id="filter-cashvan-user-container">
+                                <label class="block text-xs font-medium text-slate-500 mb-1">พนักงาน</label>
+                                <select id="filter-cashvan-user" class="input-field max-w-xs" onchange="loadCashVanData()">
+                                    <option value="">-- พนักงานทั้งหมด --</option>
+                                </select>
+                            </div>
+                            <div id="filter-cashvan-team-container">
+                                <label class="block text-xs font-medium text-slate-500 mb-1">ทีม</label>
+                                <select id="filter-cashvan-team" class="input-field max-w-xs" onchange="loadCashVanData()">
+                                    <option value="">-- ทีมทั้งหมด --</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-500 mb-1">สถานะจอดรถ</label>
+                                <select id="filter-cashvan-park-status" class="input-field max-w-xs" onchange="loadCashVanData()">
+                                    <option value="">-- สถานะทั้งหมด --</option>
+                                    <option value="parked">🅿️ จอดรถแล้ว</option>
+                                    <option value="unparked">⏳ ยังไม่เข้าจอด</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-500 mb-1">สถานะยอดโอน</label>
+                                <select id="filter-cashvan-transfer-status" class="input-field max-w-xs" onchange="loadCashVanData()">
+                                    <option value="">-- สถานะทั้งหมด --</option>
+                                    <option value="completed">✅ โอนครบถ้วน</option>
+                                    <option value="partial">⚠️ ยอดไม่ครบ</option>
+                                    <option value="untransferred">⏳ ยังไม่แจ้งโอน</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Table -->
+                    <div class="card overflow-x-auto">
+                        <table class="w-full text-sm text-left whitespace-nowrap">
+                            <thead class="bg-slate-50 text-slate-600 border-b border-slate-200">
+                                <tr>
+                                    <th class="px-4 py-3">วันที่</th>
+                                    <th class="px-4 py-3">รหัส</th>
+                                    <th class="px-4 py-3">พนักงาน</th>
+                                    <th class="px-4 py-3">ทีม</th>
+                                    <th class="px-4 py-3">ทะเบียนรถ</th>
+                                    <th class="px-4 py-3 text-center">🅿️ เวลาจอดรถ</th>
+                                    <th class="px-4 py-3 text-right">💰 ยอดขายวันนี้ (฿)</th>
+                                    <th class="px-4 py-3 text-right">💵 ยอดแจ้งโอน (฿)</th>
+                                    <th class="px-4 py-3 text-center">เวลาโอน</th>
+                                    <th class="px-4 py-3 text-center">สถานะยอดโอน</th>
+                                    <th class="px-4 py-3 text-center">จัดการ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-cashvan" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Recruitment View (ระบบรับสมัครงาน) -->
+                <div id="view-recruitment" class="view fade-in">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                        <div>
+                            <h2 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
+                                <i data-lucide="user-plus" class="w-7 h-7 text-indigo-600"></i> ข้อมูลผู้สมัครงาน (Recruitment)
+                            </h2>
+                            <p class="text-sm text-slate-500 mt-1">จัดการใบสมัครงานที่ส่งเข้ามาจาก LINE Official Account (KVS+)</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="exportCSV('recruitment')" class="btn btn-secondary"><i data-lucide="download" class="w-4 h-4"></i> Export</button>
+                            <button onclick="loadRecruitmentData()" class="btn btn-secondary"><i data-lucide="refresh-cw" class="w-4 h-4"></i> รีเฟรช</button>
+                        </div>
+                    </div>
+
+                    <!-- KPI Cards -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                        <div class="card p-4 bg-gradient-to-br from-indigo-50 to-white border-indigo-100">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-xs font-semibold text-indigo-700 uppercase tracking-wider">ผู้สมัครทั้งหมด</span>
+                                <div class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center"><i data-lucide="users" class="w-4 h-4"></i></div>
+                            </div>
+                            <h3 class="text-2xl font-bold text-slate-800" id="kpi-recruit-total">0 คน</h3>
+                            <p class="text-xs text-slate-500 mt-1">รวมทุกตำแหน่ง</p>
+                        </div>
+                        <div class="card p-4 bg-gradient-to-br from-amber-50 to-white border-amber-100">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-xs font-semibold text-amber-700 uppercase tracking-wider">สมัครใหม่ (รอดำเนินการ)</span>
+                                <div class="w-8 h-8 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center"><i data-lucide="sparkles" class="w-4 h-4"></i></div>
+                            </div>
+                            <h3 class="text-2xl font-bold text-amber-600" id="kpi-recruit-new">0 คน</h3>
+                            <p class="text-xs text-slate-500 mt-1">รอ HR ติดต่อกลับ</p>
+                        </div>
+                        <div class="card p-4 bg-gradient-to-br from-blue-50 to-white border-blue-100">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-xs font-semibold text-blue-700 uppercase tracking-wider">นัดสัมภาษณ์</span>
+                                <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center"><i data-lucide="phone-call" class="w-4 h-4"></i></div>
+                            </div>
+                            <h3 class="text-2xl font-bold text-blue-600" id="kpi-recruit-interview">0 คน</h3>
+                            <p class="text-xs text-slate-500 mt-1">อยู่ระหว่างสัมภาษณ์</p>
+                        </div>
+                        <div class="card p-4 bg-gradient-to-br from-emerald-50 to-white border-emerald-100">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-xs font-semibold text-emerald-700 uppercase tracking-wider">รับเข้าทำงาน</span>
+                                <div class="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center"><i data-lucide="check-circle" class="w-4 h-4"></i></div>
+                            </div>
+                            <h3 class="text-2xl font-bold text-emerald-600" id="kpi-recruit-passed">0 คน</h3>
+                            <p class="text-xs text-slate-500 mt-1">ผ่านการคัดเลือก</p>
+                        </div>
+                    </div>
+
+                    <!-- Filter Bar -->
+                    <div class="card p-4 mb-4 flex flex-wrap gap-4 items-center justify-between">
+                        <div class="flex gap-4 flex-wrap items-center flex-1">
+                            <div class="flex-1 min-w-[200px] max-w-sm">
+                                <label class="block text-xs font-medium text-slate-500 mb-1">ค้นหา (ชื่อ / เบอร์โทร / ตำแหน่ง)</label>
+                                <input type="text" id="filter-recruit-search" placeholder="พิมพ์คำค้นหา..." class="input-field" oninput="renderRecruitmentTable()">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-500 mb-1">สถานะ</label>
+                                <select id="filter-recruit-status" class="input-field max-w-xs" onchange="renderRecruitmentTable()">
+                                    <option value="">-- สถานะทั้งหมด --</option>
+                                    <option value="new">🆕 สมัครใหม่</option>
+                                    <option value="contacted">📞 ติดต่อแล้ว</option>
+                                    <option value="interview">🗓️ นัดสัมภาษณ์</option>
+                                    <option value="passed">✅ รับเข้าทำงาน</option>
+                                    <option value="rejected">❌ ไม่ผ่าน</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Table -->
+                    <div class="card overflow-x-auto">
+                        <table class="w-full text-sm text-left whitespace-nowrap">
+                            <thead class="bg-slate-50 text-slate-600 border-b border-slate-200">
+                                <tr>
+                                    <th class="px-4 py-3">วันที่สมัคร</th>
+                                    <th class="px-4 py-3">ชื่อ-นามสกุล</th>
+                                    <th class="px-4 py-3">เบอร์โทรศัพท์</th>
+                                    <th class="px-4 py-3">ตำแหน่งที่สมัคร</th>
+                                    <th class="px-4 py-3 text-center">อายุ</th>
+                                    <th class="px-4 py-3">ที่พักปัจจุบัน</th>
+                                    <th class="px-4 py-3">ใบขับขี่</th>
+                                    <th class="px-4 py-3">พร้อมเริ่มงาน</th>
+                                    <th class="px-4 py-3 text-center">สถานะ</th>
+                                    <th class="px-4 py-3 text-center">จัดการ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-recruitment" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+
                 <!-- Leaves View -->
                 <div id="view-leaves" class="view fade-in">
                     <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
@@ -455,6 +661,7 @@
     </div>
     <!-- Core Application Logic -->
     <script>
+
         // ==========================================
         // 1. Config & State
         // ==========================================
@@ -477,6 +684,8 @@
                 vehicles: [],
                 reports: [],
                 fuels: [],
+                cashvan: [],
+                recruitment: [],
                 leaves: []
             },
             charts: {
@@ -494,6 +703,8 @@
             { id: 'dashboard', icon: 'layout-dashboard', label: 'Dashboard', roles: [ROLES.ADMIN, ROLES.EXEC, ROLES.SUP, ROLES.SALES] },
             { id: 'reports', icon: 'file-text', label: 'รายงานยอดขาย', roles: [ROLES.ADMIN, ROLES.SUP, ROLES.SALES] },
             { id: 'fuel', icon: 'fuel', label: 'บันทึกน้ำมัน', roles: [ROLES.ADMIN, ROLES.SUP, ROLES.SALES] },
+            { id: 'cashvan', icon: 'truck', label: 'หน่วยรถเงินสด', roles: [ROLES.ADMIN, ROLES.EXEC, ROLES.SUP, ROLES.SALES] },
+            { id: 'recruitment', icon: 'user-plus', label: 'ข้อมูลผู้สมัครงาน', roles: [ROLES.ADMIN, ROLES.EXEC, ROLES.SUP] },
             { id: 'leaves', icon: 'calendar-clock', label: 'ระบบการลา', roles: [ROLES.ADMIN, ROLES.EXEC, ROLES.SUP, ROLES.SALES] },
             { id: 'attendance', icon: 'clock', label: 'เวลาทำงาน', roles: [ROLES.ADMIN, ROLES.EXEC, ROLES.SUP, ROLES.SALES] },
             { id: 'payslips', icon: 'receipt', label: 'สลิปเงินเดือน', roles: [ROLES.ADMIN, ROLES.EXEC, ROLES.SUP, ROLES.SALES] },
@@ -530,6 +741,8 @@
         }
         function formatNumber(num) { return Number(num).toLocaleString('th-TH', { maximumFractionDigits: 2 }); }
         function formatDate(dateStr) { if(!dateStr) return '-'; return new Date(dateStr).toLocaleDateString('th-TH'); }
+        function formatTime(isoStr) { if(!isoStr) return '-'; try { return new Date(isoStr).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + ' น.'; } catch { return '-'; } }
+        function formatDateTime(isoStr) { if(!isoStr) return '-'; try { const d = new Date(isoStr); return d.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' }) + ' ' + d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + ' น.'; } catch { return '-'; } }
         async function logAudit(action, tableName, recordId, detail) {
             if(!dbClient || !appState.user) return;
             await dbClient.from('audit_logs').insert([{
@@ -698,6 +911,8 @@
                 if(viewId === 'dashboard') await loadDashboardData();
                 if(viewId === 'reports') await loadReports();
                 if(viewId === 'fuel') await loadFuels();
+                if(viewId === 'cashvan') await loadCashVanData();
+                if(viewId === 'recruitment') await loadRecruitmentData();
                 if(viewId === 'leaves') await loadLeaves();
                 if(viewId === 'users' && appState.user.role === ROLES.ADMIN) await loadUsers();
                 if(viewId === 'master' && appState.user.role === ROLES.ADMIN) await loadMasterData();
@@ -1046,6 +1261,473 @@
             `}).join('') || `<tr><td colspan="7" class="text-center py-8 text-slate-500">ไม่พบข้อมูล</td></tr>`;
             lucide.createIcons();
         }
+
+        // ==========================================
+        // 4.5 Cash Van Closing (หน่วยรถเงินสด)
+        // ==========================================
+        async function loadCashVanData() {
+            showLoader();
+            try {
+                const dateEl = document.getElementById('filter-cashvan-date');
+                if (!dateEl.value) {
+                    const now = new Date();
+                    dateEl.value = now.toLocaleDateString('en-CA'); // YYYY-MM-DD
+                }
+                const selectedDate = dateEl.value;
+
+                const userFilterEl = document.getElementById('filter-cashvan-user');
+                const teamFilterEl = document.getElementById('filter-cashvan-team');
+                const parkStatusFilter = document.getElementById('filter-cashvan-park-status')?.value || '';
+                const transferStatusFilter = document.getElementById('filter-cashvan-transfer-status')?.value || '';
+
+                // Setup dropdowns based on user role
+                if (appState.user.role === ROLES.SALES) {
+                    document.getElementById('filter-cashvan-user-container')?.classList.add('hidden');
+                    document.getElementById('filter-cashvan-team-container')?.classList.add('hidden');
+                } else if (appState.user.role === ROLES.SUP) {
+                    document.getElementById('filter-cashvan-team-container')?.classList.add('hidden');
+                    if (userFilterEl && userFilterEl.children.length <= 1) {
+                        const { data: teamUsers } = await dbClient.from('users').select('id, name').eq('team_id', appState.user.team_id).order('name');
+                        if (teamUsers) teamUsers.forEach(u => userFilterEl.insertAdjacentHTML('beforeend', `<option value="${u.id}">${u.name}</option>`));
+                    }
+                } else {
+                    // Admin & Executive
+                    if (userFilterEl && userFilterEl.children.length <= 1) {
+                        const [{ data: users }, { data: teams }] = await Promise.all([
+                            dbClient.from('users').select('id, name').order('name'),
+                            dbClient.from('teams').select('id, team_name').order('team_name')
+                        ]);
+                        if (users) users.forEach(u => userFilterEl.insertAdjacentHTML('beforeend', `<option value="${u.id}">${u.name}</option>`));
+                        if (teams) teams.forEach(t => teamFilterEl.insertAdjacentHTML('beforeend', `<option value="${t.id}">${t.team_name}</option>`));
+                    }
+                }
+
+                // Query users
+                let userQ = dbClient.from('users')
+                    .select('id, name, emp_code, role, status, team_id, vehicle_id, teams!fk_user_team(team_name, department), vehicles(license_plate)')
+                    .eq('role', 'sales')
+                    .eq('status', 'active')
+                    .order('name');
+
+                if (appState.user.role === ROLES.SALES) {
+                    userQ = userQ.eq('id', appState.user.id);
+                } else if (appState.user.role === ROLES.SUP) {
+                    userQ = userQ.eq('team_id', appState.user.team_id);
+                }
+
+                const [{ data: usersList }, { data: checkinRows }, { data: reportRows }] = await Promise.all([
+                    userQ,
+                    dbClient.from('cash_van_checkins')
+                        .select('*, users(name, emp_code, team_id), vehicles(license_plate)')
+                        .eq('checkin_date', selectedDate),
+                    dbClient.from('daily_reports')
+                        .select('user_id, total_sales')
+                        .eq('report_date', selectedDate)
+                ]);
+
+                const checkinMap = {};
+                (checkinRows || []).forEach(c => { checkinMap[c.user_id] = c; });
+
+                const reportMap = {};
+                (reportRows || []).forEach(r => { reportMap[r.user_id] = r; });
+
+                // Combine user list with checkins and reports
+                const combined = [];
+                const userIdsProcessed = new Set();
+
+                (usersList || []).forEach(u => {
+                    userIdsProcessed.add(u.id);
+                    const c = checkinMap[u.id] || null;
+                    const r = reportMap[u.id] || null;
+                    combined.push({
+                        user: u,
+                        user_id: u.id,
+                        checkin: c,
+                        total_sales: r ? (Number(r.total_sales) || 0) : 0,
+                        has_report: !!r
+                    });
+                });
+
+                // Add any user who has a checkin or report today but was not in the usersList
+                (checkinRows || []).forEach(c => {
+                    if (!userIdsProcessed.has(c.user_id)) {
+                        userIdsProcessed.add(c.user_id);
+                        const r = reportMap[c.user_id] || null;
+                        combined.push({
+                            user: c.users || { id: c.user_id, name: 'พนักงาน', emp_code: '-' },
+                            user_id: c.user_id,
+                            checkin: c,
+                            total_sales: r ? (Number(r.total_sales) || 0) : 0,
+                            has_report: !!r
+                        });
+                    }
+                });
+
+                // Filter combined data
+                const userFilterVal = userFilterEl?.value || '';
+                const teamFilterVal = teamFilterEl?.value || '';
+
+                const filtered = combined.filter(item => {
+                    const u = item.user;
+                    const c = item.checkin;
+                    const totalSales = item.total_sales;
+                    const transferAmount = c ? (Number(c.transfer_amount) || 0) : 0;
+                    const isParked = !!(c && c.parked_at);
+
+                    if (userFilterVal && item.user_id !== userFilterVal) return false;
+                    if (teamFilterVal && u.team_id !== teamFilterVal) return false;
+
+                    if (parkStatusFilter === 'parked' && !isParked) return false;
+                    if (parkStatusFilter === 'unparked' && isParked) return false;
+
+                    if (transferStatusFilter === 'completed') {
+                        if (!(transferAmount >= totalSales && totalSales > 0)) return false;
+                    } else if (transferStatusFilter === 'partial') {
+                        if (!(transferAmount > 0 && transferAmount < totalSales)) return false;
+                    } else if (transferStatusFilter === 'untransferred') {
+                        if (!(transferAmount === 0 && totalSales > 0)) return false;
+                    }
+
+                    return true;
+                });
+
+                // Store in appState
+                appState.data.cashvan = filtered.map(item => {
+                    const c = item.checkin;
+                    const transferAmount = c ? (Number(c.transfer_amount) || 0) : 0;
+                    const totalSales = item.total_sales;
+                    let status = '-';
+                    if (transferAmount >= totalSales && totalSales > 0) status = 'โอนครบถ้วน';
+                    else if (transferAmount > 0 && transferAmount < totalSales) status = 'ยอดไม่ครบ';
+                    else if (transferAmount > 0 && totalSales === 0) status = 'โอนแล้ว';
+                    else if (totalSales > 0) status = 'ยังไม่แจ้งโอน';
+
+                    return {
+                        date: selectedDate,
+                        user_id: item.user_id,
+                        emp_code: item.user?.emp_code || '',
+                        name: item.user?.name || '',
+                        team: item.user?.teams?.team_name || '',
+                        license_plate: item.user?.vehicles?.license_plate || c?.license_plate || c?.vehicles?.license_plate || '-',
+                        parked_at: c?.parked_at || '',
+                        total_sales: totalSales,
+                        transfer_amount: transferAmount,
+                        transfer_at: c?.transfer_at || '',
+                        status: status,
+                        checkin_id: c?.id || null,
+                        parked_note: c?.parked_note || '',
+                        transfer_note: c?.transfer_note || ''
+                    };
+                });
+
+                // Calculate KPIs
+                let parkedCount = 0;
+                let unparkedCount = 0;
+                let totalSalesSum = 0;
+                let salesReporterCount = 0;
+                let transferredSum = 0;
+                let transferCount = 0;
+                let pendingSum = 0;
+                let pendingCount = 0;
+
+                filtered.forEach(item => {
+                    const c = item.checkin;
+                    const isParked = !!(c && c.parked_at);
+                    if (isParked) parkedCount++;
+                    else unparkedCount++;
+
+                    const sales = item.total_sales;
+                    const transfer = c ? (Number(c.transfer_amount) || 0) : 0;
+
+                    if (item.has_report && sales > 0) {
+                        totalSalesSum += sales;
+                        salesReporterCount++;
+                    }
+                    if (transfer > 0) {
+                        transferredSum += transfer;
+                        transferCount++;
+                    }
+                    if (sales > transfer) {
+                        pendingSum += (sales - transfer);
+                        pendingCount++;
+                    }
+                });
+
+                document.getElementById('kpi-cashvan-parked').textContent = `${parkedCount} คัน`;
+                document.getElementById('kpi-cashvan-unparked').textContent = `ค้างจอด: ${unparkedCount} คัน`;
+                document.getElementById('kpi-cashvan-sales').textContent = `฿${formatNumber(totalSalesSum)}`;
+                document.getElementById('kpi-cashvan-sellers').textContent = `จากรายงาน ${salesReporterCount} คน`;
+                document.getElementById('kpi-cashvan-transferred').textContent = `฿${formatNumber(transferredSum)}`;
+                document.getElementById('kpi-cashvan-transfer-count').textContent = `แจ้งโอน: ${transferCount} คน`;
+                document.getElementById('kpi-cashvan-pending').textContent = `฿${formatNumber(pendingSum)}`;
+                document.getElementById('kpi-cashvan-pending-count').textContent = `ค้างโอน: ${pendingCount} คน`;
+
+                // Render Table
+                const tbody = document.getElementById('table-cashvan');
+                tbody.innerHTML = filtered.map(item => {
+                    const u = item.user;
+                    const c = item.checkin;
+                    const sales = item.total_sales;
+                    const transfer = c ? (Number(c.transfer_amount) || 0) : 0;
+                    const plate = u.vehicles?.license_plate || c?.vehicles?.license_plate || c?.license_plate || '-';
+
+                    let transferBadge = `<span class="text-slate-400">-</span>`;
+                    if (transfer >= sales && sales > 0) {
+                        transferBadge = `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800"><i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i> โอนครบถ้วน</span>`;
+                    } else if (transfer > 0 && transfer < sales) {
+                        transferBadge = `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800"><i data-lucide="alert-triangle" class="w-3.5 h-3.5"></i> ขาด ฿${formatNumber(sales - transfer)}</span>`;
+                    } else if (transfer > 0 && sales === 0) {
+                        transferBadge = `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800"><i data-lucide="info" class="w-3.5 h-3.5"></i> โอน ฿${formatNumber(transfer)}</span>`;
+                    } else if (sales > 0) {
+                        transferBadge = `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-700"><i data-lucide="x-circle" class="w-3.5 h-3.5"></i> ยังไม่โอน</span>`;
+                    }
+
+                    const parkBadge = c && c.parked_at
+                        ? `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800"><i data-lucide="check" class="w-3.5 h-3.5"></i> ${formatTime(c.parked_at)}</span>`
+                        : `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-500"><i data-lucide="clock" class="w-3.5 h-3.5"></i> ยังไม่เข้าจอด</span>`;
+
+                    const actionsHtml = c ? `
+                        <div class="flex items-center justify-center gap-2">
+                            <button onclick="viewCashVanDetail('${c.id}')" class="text-indigo-600 hover:text-indigo-800" title="ดูรายละเอียด"><i data-lucide="eye" class="w-4 h-4"></i></button>
+                            ${appState.user.role === ROLES.ADMIN ? `<button onclick="deleteRecord('cash_van_checkins', '${c.id}')" class="text-red-500 hover:text-red-700" title="ลบข้อมูล"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
+                        </div>
+                    ` : `<span class="text-xs text-slate-400">-</span>`;
+
+                    return `
+                        <tr class="hover:bg-slate-50 transition-colors">
+                            <td class="px-4 py-3">${formatDate(selectedDate)}</td>
+                            <td class="px-4 py-3 font-mono text-xs text-slate-600">${u.emp_code || '-'}</td>
+                            <td class="px-4 py-3 font-medium text-slate-800">${u.name || '-'}</td>
+                            <td class="px-4 py-3 text-xs text-slate-500">${u.teams?.team_name || '-'}</td>
+                            <td class="px-4 py-3 font-medium">${plate}</td>
+                            <td class="px-4 py-3 text-center">${parkBadge}</td>
+                            <td class="px-4 py-3 text-right font-semibold ${sales > 0 ? 'text-slate-800' : 'text-slate-400'}">${sales > 0 ? '฿' + formatNumber(sales) : '-'}</td>
+                            <td class="px-4 py-3 text-right font-semibold ${transfer > 0 ? 'text-indigo-600' : 'text-slate-400'}">${transfer > 0 ? '฿' + formatNumber(transfer) : '-'}</td>
+                            <td class="px-4 py-3 text-center text-xs text-slate-500">${c?.transfer_at ? formatTime(c.transfer_at) : '-'}</td>
+                            <td class="px-4 py-3 text-center">${transferBadge}</td>
+                            <td class="px-4 py-3 text-center">${actionsHtml}</td>
+                        </tr>
+                    `;
+                }).join('') || `<tr><td colspan="11" class="text-center py-8 text-slate-500">ไม่พบข้อมูลหน่วยรถเงินสดในวันที่เลือก</td></tr>`;
+
+                lucide.createIcons();
+            } catch (err) {
+                console.error(err);
+                showToast(err.message || 'เกิดข้อผิดพลาดในการโหลดข้อมูลหน่วยรถเงินสด', 'error');
+            }
+            hideLoader();
+        }
+
+        async function viewCashVanDetail(id) {
+            const item = (appState.data.cashvan || []).find(x => x.checkin_id === id);
+            createModal('cashVanModal', 'รายละเอียดการปิดรอบหน่วยรถเงินสด', `
+                <div class="space-y-4 text-sm">
+                    <div class="grid grid-cols-2 gap-3 p-3 bg-slate-50 rounded-lg">
+                        <div><span class="text-xs text-slate-500 block">พนักงาน:</span><strong>${item?.name || '-'}</strong> (${item?.emp_code || '-'})</div>
+                        <div><span class="text-xs text-slate-500 block">ทีม:</span><strong>${item?.team || '-'}</strong></div>
+                        <div><span class="text-xs text-slate-500 block">ทะเบียนรถ:</span><strong>${item?.license_plate || '-'}</strong></div>
+                        <div><span class="text-xs text-slate-500 block">วันที่:</span><strong>${formatDate(item?.date)}</strong></div>
+                    </div>
+                    <div class="p-3 border border-emerald-100 bg-emerald-50/50 rounded-lg">
+                        <div class="flex items-center gap-2 text-emerald-800 font-semibold mb-1">
+                            <i data-lucide="parking-circle" class="w-4 h-4"></i> การนำรถเข้าจอด
+                        </div>
+                        <p class="text-xs text-slate-600">เวลาจอด: <strong>${item?.parked_at ? formatDateTime(item.parked_at) : 'ยังไม่เข้าจอด'}</strong></p>
+                        ${item?.parked_note ? `<p class="text-xs text-slate-500 mt-1">ข้อความแจ้ง: ${item.parked_note}</p>` : ''}
+                    </div>
+                    <div class="p-3 border border-indigo-100 bg-indigo-50/50 rounded-lg">
+                        <div class="flex items-center gap-2 text-indigo-800 font-semibold mb-1">
+                            <i data-lucide="banknote" class="w-4 h-4"></i> การแจ้งโอนเงินสด
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 text-xs">
+                            <p>ยอดขายวันนี้: <strong>฿${formatNumber(item?.total_sales || 0)}</strong></p>
+                            <p>ยอดแจ้งโอน: <strong class="text-indigo-600">฿${formatNumber(item?.transfer_amount || 0)}</strong></p>
+                            <p>เวลาโอน: <strong>${item?.transfer_at ? formatDateTime(item.transfer_at) : '-'}</strong></p>
+                            <p>สถานะ: <strong>${item?.status || '-'}</strong></p>
+                        </div>
+                        ${item?.transfer_note ? `<p class="text-xs text-slate-500 mt-2">ข้อความแจ้ง: ${item.transfer_note}</p>` : ''}
+                    </div>
+                </div>
+            `, 'ปิด', 'closeModal("cashVanModal"); return false;');
+            document.getElementById('cashVanModal-submit')?.classList.add('hidden');
+            lucide.createIcons();
+        }
+
+        // ==========================================
+        // 4.6 Recruitment (ข้อมูลผู้สมัครงาน)
+        // ==========================================
+        async function loadRecruitmentData() {
+            showLoader();
+            try {
+                const { data, error } = await dbClient
+                    .from('job_applications')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+                appState.data.recruitment = data || [];
+                renderRecruitmentTable();
+            } catch (err) {
+                console.error(err);
+                showToast(err.message || 'เกิดข้อผิดพลาดในการโหลดข้อมูลผู้สมัครงาน', 'error');
+            }
+            hideLoader();
+        }
+
+        function renderRecruitmentTable() {
+            const rawList = appState.data.recruitment || [];
+
+            // Update KPIs
+            const total = rawList.length;
+            const newCount = rawList.filter(r => (r.status || 'new') === 'new').length;
+            const interviewCount = rawList.filter(r => r.status === 'interview').length;
+            const passedCount = rawList.filter(r => r.status === 'passed').length;
+
+            const elTotal = document.getElementById('kpi-recruit-total');
+            const elNew = document.getElementById('kpi-recruit-new');
+            const elInterview = document.getElementById('kpi-recruit-interview');
+            const elPassed = document.getElementById('kpi-recruit-passed');
+
+            if (elTotal) elTotal.textContent = `${total} คน`;
+            if (elNew) elNew.textContent = `${newCount} คน`;
+            if (elInterview) elInterview.textContent = `${interviewCount} คน`;
+            if (elPassed) elPassed.textContent = `${passedCount} คน`;
+
+            // Filter
+            const search = (document.getElementById('filter-recruit-search')?.value || '').trim().toLowerCase();
+            const statusFilter = document.getElementById('filter-recruit-status')?.value || '';
+
+            const filtered = rawList.filter(r => {
+                if (statusFilter && (r.status || 'new') !== statusFilter) return false;
+                if (search) {
+                    const matchName = (r.candidate_name || '').toLowerCase().includes(search);
+                    const matchPhone = (r.phone || '').toLowerCase().includes(search);
+                    const matchPos = (r.position_applied || '').toLowerCase().includes(search);
+                    const matchLoc = (r.location || '').toLowerCase().includes(search);
+                    if (!matchName && !matchPhone && !matchPos && !matchLoc) return false;
+                }
+                return true;
+            });
+
+            const statusColors = {
+                'new': 'bg-amber-100 text-amber-800 border-amber-200',
+                'contacted': 'bg-blue-100 text-blue-800 border-blue-200',
+                'interview': 'bg-purple-100 text-purple-800 border-purple-200',
+                'passed': 'bg-emerald-100 text-emerald-800 border-emerald-200',
+                'rejected': 'bg-rose-100 text-rose-800 border-rose-200'
+            };
+
+            const tbody = document.getElementById('table-recruitment');
+            if (!tbody) return;
+
+            tbody.innerHTML = filtered.map(r => {
+                const curStatus = r.status || 'new';
+                const colorClass = statusColors[curStatus] || 'bg-slate-100 text-slate-700 border-slate-200';
+
+                return `
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="px-4 py-3 text-xs text-slate-500">${formatDateTime(r.created_at)}</td>
+                        <td class="px-4 py-3 font-semibold text-slate-800">${r.candidate_name || '-'}</td>
+                        <td class="px-4 py-3">
+                            ${r.phone ? `<a href="tel:${r.phone}" class="text-indigo-600 hover:text-indigo-800 hover:underline inline-flex items-center gap-1 font-medium"><i data-lucide="phone" class="w-3.5 h-3.5"></i> ${r.phone}</a>` : '-'}
+                        </td>
+                        <td class="px-4 py-3 font-medium text-slate-700">${r.position_applied || '-'}</td>
+                        <td class="px-4 py-3 text-center">${r.age ? r.age + ' ปี' : '-'}</td>
+                        <td class="px-4 py-3 text-xs text-slate-600 max-w-[150px] truncate" title="${r.location || ''}">${r.location || '-'}</td>
+                        <td class="px-4 py-3 text-xs">${r.driving_license || '-'}</td>
+                        <td class="px-4 py-3 text-xs">${r.start_date || '-'}</td>
+                        <td class="px-4 py-3 text-center">
+                            <select onchange="updateApplicationStatus('${r.id}', this.value)" class="text-xs font-medium rounded-lg px-2 py-1 border cursor-pointer ${colorClass}">
+                                <option value="new" ${curStatus === 'new' ? 'selected' : ''}>🆕 สมัครใหม่</option>
+                                <option value="contacted" ${curStatus === 'contacted' ? 'selected' : ''}>📞 ติดต่อแล้ว</option>
+                                <option value="interview" ${curStatus === 'interview' ? 'selected' : ''}>🗓️ นัดสัมภาษณ์</option>
+                                <option value="passed" ${curStatus === 'passed' ? 'selected' : ''}>✅ รับเข้าทำงาน</option>
+                                <option value="rejected" ${curStatus === 'rejected' ? 'selected' : ''}>❌ ไม่ผ่าน</option>
+                            </select>
+                        </td>
+                        <td class="px-4 py-3 text-center">
+                            <div class="flex items-center justify-center gap-2">
+                                <button onclick="viewJobApplication('${r.id}')" class="text-indigo-600 hover:text-indigo-800" title="ดูรายละเอียด"><i data-lucide="eye" class="w-4 h-4"></i></button>
+                                ${appState.user.role === ROLES.ADMIN ? `<button onclick="deleteJobApplication('${r.id}', '${(r.candidate_name||'').replace(/'/g, "\\'")}')" class="text-red-500 hover:text-red-700" title="ลบใบสมัคร"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('') || `<tr><td colspan="10" class="text-center py-8 text-slate-500">ไม่พบข้อมูลผู้สมัครงาน</td></tr>`;
+
+            lucide.createIcons();
+        }
+
+        async function updateApplicationStatus(id, newStatus) {
+            showLoader();
+            try {
+                const { error } = await dbClient.from('job_applications').update({ status: newStatus }).eq('id', id);
+                if (error) throw error;
+                await logAudit('UPDATE', 'job_applications', id, `Updated status to ${newStatus}`);
+                showToast('อัปเดตสถานะผู้สมัครเรียบร้อย');
+                const item = (appState.data.recruitment || []).find(r => r.id === id);
+                if (item) item.status = newStatus;
+                renderRecruitmentTable();
+            } catch (err) {
+                console.error(err);
+                showToast(err.message || 'ไม่สามารถอัปเดตสถานะได้', 'error');
+            }
+            hideLoader();
+        }
+
+        async function deleteJobApplication(id, name) {
+            if (!confirm(`ยืนยันการลบใบสมัครของ "${name || 'ผู้สมัคร'}" ออกจากระบบ?`)) return;
+            showLoader();
+            try {
+                const { error } = await dbClient.from('job_applications').delete().eq('id', id);
+                if (error) throw error;
+                await logAudit('DELETE', 'job_applications', id, `Deleted application of ${name}`);
+                showToast('ลบใบสมัครเรียบร้อย');
+                appState.data.recruitment = (appState.data.recruitment || []).filter(r => r.id !== id);
+                renderRecruitmentTable();
+            } catch (err) {
+                console.error(err);
+                showToast(err.message || 'ไม่สามารถลบใบสมัครได้', 'error');
+            }
+            hideLoader();
+        }
+
+        function viewJobApplication(id) {
+            const r = (appState.data.recruitment || []).find(x => x.id === id);
+            if (!r) return showToast('ไม่พบข้อมูลผู้สมัคร', 'error');
+
+            createModal('recruitModal', `รายละเอียดใบสมัครงาน: ${r.candidate_name || '-'}`, `
+                <div class="space-y-4 text-sm">
+                    <div class="grid grid-cols-2 gap-3 p-3 bg-slate-50 rounded-lg">
+                        <div><span class="text-xs text-slate-500 block">ตำแหน่งที่สมัคร:</span><strong class="text-indigo-600 text-base">${r.position_applied || '-'}</strong></div>
+                        <div><span class="text-xs text-slate-500 block">วันที่ส่งใบสมัคร:</span><strong>${formatDateTime(r.created_at)}</strong></div>
+                        <div><span class="text-xs text-slate-500 block">ชื่อ-นามสกุล:</span><strong>${r.candidate_name || '-'}</strong></div>
+                        <div><span class="text-xs text-slate-500 block">เบอร์โทรศัพท์:</span>${r.phone ? `<a href="tel:${r.phone}" class="text-indigo-600 font-semibold underline">${r.phone}</a>` : '-'}</div>
+                        <div><span class="text-xs text-slate-500 block">อายุ:</span><strong>${r.age ? r.age + ' ปี' : '-'}</strong></div>
+                        <div><span class="text-xs text-slate-500 block">ใบขับขี่:</span><strong>${r.driving_license || '-'}</strong></div>
+                        <div><span class="text-xs text-slate-500 block">ที่พักปัจจุบัน:</span><strong>${r.location || '-'}</strong></div>
+                        <div><span class="text-xs text-slate-500 block">พร้อมเริ่มงาน:</span><strong>${r.start_date || '-'}</strong></div>
+                    </div>
+
+                    ${r.experience ? `
+                        <div class="p-3 border border-slate-200 rounded-lg">
+                            <span class="text-xs font-semibold text-slate-600 block mb-1">💼 ประสบการณ์ทำงาน:</span>
+                            <p class="text-slate-700 whitespace-pre-line text-xs bg-white p-2 rounded border border-slate-100">${r.experience}</p>
+                        </div>
+                    ` : ''}
+
+                    ${r.raw_message ? `
+                        <div class="p-3 border border-slate-200 rounded-lg bg-slate-50/50">
+                            <span class="text-xs font-semibold text-slate-600 block mb-1">💬 ข้อความที่ส่งมาจาก LINE:</span>
+                            <pre class="text-slate-600 whitespace-pre-wrap font-mono text-xs bg-white p-2 rounded border border-slate-100 max-h-40 overflow-y-auto">${r.raw_message}</pre>
+                        </div>
+                    ` : ''}
+                </div>
+            `, 'ปิด', 'closeModal("recruitModal"); return false;');
+            document.getElementById('recruitModal-submit')?.classList.add('hidden');
+            lucide.createIcons();
+        }
+
         // --- USERS ---
         async function loadUsers() {
             const { data } = await dbClient.from('users').select('*, teams!fk_user_team(team_name, department), vehicles(license_plate)').order('created_at', {ascending: false});
@@ -1147,9 +1829,9 @@
                         <div class="px-6 py-4 overflow-y-auto flex-1">
                             <form id="${id}-form" onsubmit="${submitFn}(event)">
                                 ${contentHTML}
-                                <div class="mt-6 pt-4 border-t border-slate-100 flex justify-end gap-3 print:hidden">
+                                <div class="mt-6 pt-4 border-t border-slate-100 flex justify-end gap-3">
                                     <button type="button" onclick="closeModal('${id}')" class="btn btn-secondary">ยกเลิก</button>
-                                    ${submitLabel ? `<button type="submit" class="btn btn-primary" id="${id}-submit">${submitLabel}</button>` : ''}
+                                    <button type="submit" class="btn btn-primary" id="${id}-submit">${submitLabel}</button>
                                 </div>
                             </form>
                         </div>
@@ -1811,6 +2493,20 @@
                     vehicles.forEach(v => {
                         csv += `"${v.id}","${v.license_plate}"\n`;
                     });
+                } else if(type === 'cashvan') {
+                    data = appState.data.cashvan;
+                    if(!data || data.length === 0) throw new Error('ไม่มีข้อมูลสำหรับ Export');
+                    csv = 'Date,EmpCode,Name,Team,Vehicle,ParkedAt,DailySales,TransferAmount,TransferAt,Status,ParkedNote,TransferNote\n';
+                    data.forEach(c => {
+                        csv += `${c.date},"${c.emp_code||''}","${c.name||''}","${c.team||''}","${c.license_plate||''}","${c.parked_at||''}","${c.total_sales||0}","${c.transfer_amount||0}","${c.transfer_at||''}","${c.status||''}","${(c.parked_note||'').replace(/"/g, '""')}","${(c.transfer_note||'').replace(/"/g, '""')}"\n`;
+                    });
+                } else if(type === 'recruitment') {
+                    data = appState.data.recruitment;
+                    if(!data || data.length === 0) throw new Error('ไม่มีข้อมูลสำหรับ Export');
+                    csv = 'CreatedAt,CandidateName,Phone,PositionApplied,Age,Location,DrivingLicense,StartDate,Experience,Status\n';
+                    data.forEach(r => {
+                        csv += `"${r.created_at}","${r.candidate_name||''}","${r.phone||''}","${r.position_applied||''}","${r.age||''}","${(r.location||'').replace(/"/g, '""')}","${r.driving_license||''}","${r.start_date||''}","${(r.experience||'').replace(/"/g, '""')}","${r.status||''}"\n`;
+                    });
                 }
 
                 const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
@@ -1976,11 +2672,7 @@
                                 const parts = row[5].split('|');
                                 parts.forEach(p => {
                                     const [k, v] = p.split('=');
-                                    if(k && v) {
-                                        let cleanV = v.replace(/,/g, '').trim();
-                                        let parsed = parseFloat(cleanV);
-                                        income_details[k.trim()] = (isNaN(parsed) || cleanV.includes('/')) ? v.trim() : parsed;
-                                    }
+                                    if(k && v) income_details[k.trim()] = parseFloat(v.replace(/,/g, ''));
                                 });
                             }
                             
@@ -1989,11 +2681,7 @@
                                 const parts = row[6].split('|');
                                 parts.forEach(p => {
                                     const [k, v] = p.split('=');
-                                    if(k && v) {
-                                        let cleanV = v.replace(/,/g, '').trim();
-                                        let parsed = parseFloat(cleanV);
-                                        deduction_details[k.trim()] = (isNaN(parsed) || cleanV.includes('/')) ? v.trim() : parsed;
-                                    }
+                                    if(k && v) deduction_details[k.trim()] = parseFloat(v.replace(/,/g, ''));
                                 });
                             }
 
@@ -2036,7 +2724,7 @@
             const monthFilter = document.getElementById('filter-leave-month').value;
             const userFilter = document.getElementById('filter-leave-user')?.value;
             
-            let q = dbClient.from('leave_requests').select('*, users(emp_code, name)').order('start_date', {ascending: true});
+            let q = dbClient.from('leave_requests').select('*, users(emp_code, name)').order('created_at', {ascending: false});
             
             const userFilterEl = document.getElementById('filter-leave-user');
             if (appState.user.role === ROLES.ADMIN || appState.user.role === ROLES.EXEC) {
@@ -2066,17 +2754,11 @@
                 q = q.eq('status', statusFilter);
             }
             if (monthFilter) {
-                const [yyyy, mm] = monthFilter.split('-');
-                
-                // When we construct a Date, JavaScript handles month rollover natively
-                // Note: JavaScript months are 0-indexed (0=Jan, 11=Dec)
-                const startDateObj = new Date(Date.UTC(parseInt(yyyy), parseInt(mm) - 2, 26));
-                const endDateObj = new Date(Date.UTC(parseInt(yyyy), parseInt(mm) - 1, 25, 23, 59, 59));
-                
-                const startDate = startDateObj.toISOString().substring(0,10);
-                const endDate = endDateObj.toISOString().substring(0,10);
-                
-                q = q.gte('start_date', startDate).lte('start_date', endDate);
+                const startDate = monthFilter + '-01';
+                const nextMonth = new Date(startDate);
+                nextMonth.setMonth(nextMonth.getMonth() + 1);
+                const endDate = nextMonth.toISOString().substring(0,10);
+                q = q.gte('start_date', startDate).lt('start_date', endDate);
             }
             
             const { data } = await q;
@@ -2225,7 +2907,7 @@
             const userFilter = document.getElementById('filter-att-user')?.value;
             const userFilterEl = document.getElementById('filter-att-user');
             
-            let q = dbClient.from('time_attendance').select('*, users(emp_code, name)').order('work_date', {ascending: true});
+            let q = dbClient.from('time_attendance').select('*, users(emp_code, name)').order('work_date', {ascending: false});
             
             if (appState.user.role === ROLES.ADMIN || appState.user.role === ROLES.EXEC) {
                 if (userFilterEl) userFilterEl.classList.remove('hidden');
@@ -2248,15 +2930,11 @@
             }
 
             if (monthFilter) {
-                const [yyyy, mm] = monthFilter.split('-');
-                
-                const startDateObj = new Date(Date.UTC(parseInt(yyyy), parseInt(mm) - 2, 26));
-                const endDateObj = new Date(Date.UTC(parseInt(yyyy), parseInt(mm) - 1, 25, 23, 59, 59));
-                
-                const startDate = startDateObj.toISOString().substring(0,10);
-                const endDate = endDateObj.toISOString().substring(0,10);
-                
-                q = q.gte('work_date', startDate).lte('work_date', endDate);
+                const startDate = monthFilter + '-01';
+                const nextMonth = new Date(startDate);
+                nextMonth.setMonth(nextMonth.getMonth() + 1);
+                const endDate = nextMonth.toISOString().substring(0,10);
+                q = q.gte('work_date', startDate).lt('work_date', endDate);
             }
 
             const { data } = await q;
@@ -2264,22 +2942,23 @@
             
             const tbody = document.getElementById('table-attendance');
             tbody.innerHTML = appState.data.attendance.map(a => `
-                <tr class="hover:bg-slate-50 text-sm">
-                    <td class="px-4 py-1">${formatDate(a.work_date)}</td>
-                    <td class="px-4 py-1 text-center">
-                        <span class="px-2 py-0.5 rounded-full text-xs font-medium ${a.status === 'วันทำงาน' || a.status === 'present' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-700'}">${a.status === 'present' ? 'วันทำงาน' : (a.status || '-')}</span>
-                    </td>
-                    <td class="px-4 py-1">${a.users?.emp_code || '-'}</td>
-                    <td class="px-4 py-1">${a.users?.name || 'Unknown'}</td>
-                    <td class="px-4 py-1 text-center">
+                <tr class="hover:bg-slate-50">
+                    <td class="px-4 py-3">${formatDate(a.work_date)}</td>
+                    <td class="px-4 py-3">${a.users?.emp_code || '-'}</td>
+                    <td class="px-4 py-3">${a.users?.name || 'Unknown'}</td>
+                    <td class="px-4 py-3 text-center">
                         ${a.time_in ? a.time_in.substring(0,5) : '-'} - ${a.time_out ? a.time_out.substring(0,5) : '-'}
                     </td>
-                    <td class="px-4 py-1 max-w-[200px] truncate" title="${a.remark||''}">${a.remark||'-'}</td>
-                    <td class="px-4 py-1 text-center admin-only">
+                    <td class="px-4 py-3 text-center ${a.late_minutes > 0 ? 'text-red-500 font-bold' : ''}">${a.late_minutes || 0}</td>
+                    <td class="px-4 py-3 text-center">
+                        <span class="px-2 py-1 rounded-full text-xs font-medium ${a.late_minutes > 0 ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'}">${a.late_minutes > 0 ? 'สาย' : 'ปกติ'}</span>
+                    </td>
+                    <td class="px-4 py-3 max-w-[200px] truncate" title="${a.remark||''}">${a.remark||'-'}</td>
+                    <td class="px-4 py-3 text-center admin-only">
                         ${appState.user.role === ROLES.ADMIN ? `<button onclick="deleteRecord('time_attendance', '${a.id}')" class="text-red-400 hover:text-red-600"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
                     </td>
                 </tr>
-            `).join('') || `<tr><td colspan="7" class="text-center py-8 text-slate-500">ไม่มีข้อมูล</td></tr>`;
+            `).join('') || `<tr><td colspan="8" class="text-center py-8 text-slate-500">ไม่มีข้อมูล</td></tr>`;
             lucide.createIcons();
         }
 
@@ -2348,40 +3027,19 @@
             const inc = slip.income_details || {};
             const ded = slip.deduction_details || {};
             
-            const INCOME_ORDER = ['เงินเดือน', 'OT (นาที)', 'เงินได้ OT', 'Incentive', 'KPI คงที่', 'KPI วันทำงาน', 'KPI ผลงาน', 'ค่าโทรศัพท์', 'ค่าเบี้ยเลี้ยง', 'สวัสดิการอื่น ๆ', 'เงินได้ - อื่นๆ1', 'ค่าสึกหรอ', 'คืนเงินค้ำ', 'คืนเงินค้ำ*ลาออก'];
-            const DEDUCT_ORDER = ['ประกันสังคม', 'ขาดงาน(วัน)', 'หัก ขาดงาน', 'ลากิจ(วัน)', 'หัก ลากิจ', 'ลากิจ(ชม.)', 'หัก ลากิจ.1', 'ลาป่วย(วัน)', 'หัก ลาป่วย', 'ลาป่วย(ชม.)', 'หัก ลาป่วย.1', 'สาย (นาที)', 'หักสาย >30', 'เงินกู้ยืม', 'งวดเงินค้ำ', 'หัก เงินค้ำ', 'หัก กยศ.', 'ออก CN บิล', '<80%', 'ณ ที่จ่าย', 'ประกันซื่อสัตย์', 'หัก เงินสะสม', 'ค่าปรับจราจร', 'หัก สต็อค', 'หัก อื่นๆ'];
-            
-            const getSortedKeys = (obj, order) => {
-                const keys = Object.keys(obj);
-                const sorted = [];
-                order.forEach(k => { if(keys.includes(k)) sorted.push(k); });
-                keys.forEach(k => { if(!order.includes(k)) sorted.push(k); });
-                return sorted;
-            };
-
-            const isNonMoney = (k) => k === 'งวดเงินค้ำ' || k.includes('(นาที)') || k.includes('(วัน)') || k.includes('(ชม.)');
-
-            const formatVal = (k, v) => {
-                if (k === 'งวดเงินค้ำ' || typeof v === 'string') return v || '-';
-                return isNonMoney(k) ? parseFloat(v||0).toString() : parseFloat(v||0).toLocaleString('en-US', {minimumFractionDigits: 2});
-            };
-
-            const incHtml = getSortedKeys(inc, INCOME_ORDER).map(k => `
+            const incHtml = Object.keys(inc).map(k => `
                 <div class="flex justify-between text-sm py-1 border-b border-slate-100 last:border-0">
                     <span class="text-slate-600">${k}</span>
-                    <span class="font-medium">${formatVal(k, inc[k])}</span>
+                    <span class="font-medium">${parseFloat(inc[k]||0).toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
                 </div>
             `).join('');
             
-            const dedHtml = getSortedKeys(ded, DEDUCT_ORDER).map(k => {
-                const colorClass = isNonMoney(k) ? 'text-slate-800' : 'text-red-500';
-                return `
+            const dedHtml = Object.keys(ded).map(k => `
                 <div class="flex justify-between text-sm py-1 border-b border-slate-100 last:border-0">
                     <span class="text-slate-600">${k}</span>
-                    <span class="font-medium ${colorClass}">${formatVal(k, ded[k])}</span>
+                    <span class="font-medium text-red-500">${parseFloat(ded[k]||0).toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
                 </div>
-                `;
-            }).join('');
+            `).join('');
 
             createModal('slipModal', 'สลิปเงินเดือน (Digital Payslip)', `
                 <div class="bg-white p-6 border rounded-lg print:border-0 print:shadow-none" id="print-area">
@@ -2440,6 +3098,7 @@
 
         // Initialize App on load
         window.onload = initApp;
+    
     </script>
 </body>
 </html>
