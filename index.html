@@ -316,6 +316,12 @@
                                 <label class="block text-xs font-medium text-slate-500 mb-1">เลือกวันที่</label>
                                 <input type="date" id="filter-cashvan-date" class="input-field max-w-xs" onchange="loadCashVanData()">
                             </div>
+                            <div id="filter-cashvan-dept-container">
+                                <label class="block text-xs font-medium text-slate-500 mb-1">แผนก</label>
+                                <select id="filter-cashvan-dept" class="input-field max-w-xs" onchange="loadCashVanData()">
+                                    <option value="">-- ทุกแผนก --</option>
+                                </select>
+                            </div>
                             <div id="filter-cashvan-user-container">
                                 <label class="block text-xs font-medium text-slate-500 mb-1">พนักงาน</label>
                                 <select id="filter-cashvan-user" class="input-field max-w-xs" onchange="loadCashVanData()">
@@ -1277,10 +1283,26 @@
 
                 const userFilterEl = document.getElementById('filter-cashvan-user');
                 const teamFilterEl = document.getElementById('filter-cashvan-team');
+                const deptFilterEl = document.getElementById('filter-cashvan-dept');
                 const parkStatusFilter = document.getElementById('filter-cashvan-park-status')?.value || '';
                 const transferStatusFilter = document.getElementById('filter-cashvan-transfer-status')?.value || '';
 
-                // Setup dropdowns based on user role
+                // Populate dept dropdown once (Admin/Exec only)
+                if (appState.user.role === ROLES.ADMIN || appState.user.role === ROLES.EXEC) {
+                    if (deptFilterEl && deptFilterEl.children.length <= 1) {
+                        const { data: depts } = await dbClient.from('teams').select('department').neq('department', null).order('department');
+                        const uniqueDepts = [...new Set((depts || []).map(d => d.department).filter(Boolean))];
+                        uniqueDepts.forEach(dep => deptFilterEl.insertAdjacentHTML('beforeend', `<option value="${dep}">${dep}</option>`));
+                        // Default to หน่วยรถเงินสด if not yet selected and it exists
+                        if (!deptFilterEl.value && uniqueDepts.includes('หน่วยรถเงินสด')) {
+                            deptFilterEl.value = 'หน่วยรถเงินสด';
+                        }
+                    }
+                } else {
+                    document.getElementById('filter-cashvan-dept-container')?.classList.add('hidden');
+                }
+
+                // Setup user/team dropdowns based on user role
                 if (appState.user.role === ROLES.SALES) {
                     document.getElementById('filter-cashvan-user-container')?.classList.add('hidden');
                     document.getElementById('filter-cashvan-team-container')?.classList.add('hidden');
@@ -1302,6 +1324,14 @@
                     }
                 }
 
+                // Resolve dept filter → team_ids
+                const selectedDept = deptFilterEl?.value || '';
+                let deptTeamIds = null;
+                if (selectedDept) {
+                    const { data: deptTeams } = await dbClient.from('teams').select('id').eq('department', selectedDept);
+                    deptTeamIds = (deptTeams || []).map(t => t.id);
+                }
+
                 // Query users
                 let userQ = dbClient.from('users')
                     .select('id, name, emp_code, role, status, team_id, vehicle_id, teams!fk_user_team(team_name, department), vehicles(license_plate)')
@@ -1313,6 +1343,9 @@
                     userQ = userQ.eq('id', appState.user.id);
                 } else if (appState.user.role === ROLES.SUP) {
                     userQ = userQ.eq('team_id', appState.user.team_id);
+                } else if (deptTeamIds !== null) {
+                    if (deptTeamIds.length > 0) userQ = userQ.in('team_id', deptTeamIds);
+                    else userQ = userQ.eq('id', '00000000-0000-0000-0000-000000000000'); // no match
                 }
 
                 const [{ data: usersList }, { data: checkinRows }, { data: reportRows }] = await Promise.all([
@@ -1783,7 +1816,10 @@
                         <span class="font-medium">${t.team_name}</span>
                         <span class="text-xs text-slate-500 block">แผนก: ${t.department || '-'}</span>
                     </div>
-                    <button onclick="deleteRecord('teams', '${t.id}')" class="text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    <div class="flex items-center gap-3">
+                        <button onclick="editTeam('${t.id}')" class="text-indigo-500 hover:text-indigo-700" title="แก้ไข"><i data-lucide="edit" class="w-4 h-4"></i></button>
+                        <button onclick="deleteRecord('teams', '${t.id}')" class="text-red-500 hover:text-red-700" title="ลบ"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    </div>
                 </li>
             `).join('');
             
@@ -2347,8 +2383,8 @@
                             <label class="label">แผนก</label>
                             <select id="m-department" class="input-field">
                                 <option value="">-- ไม่ระบุแผนก --</option>
-                                <option value="ขายเครดิต" ${data.department === 'ขายเครดิต' ? 'selected' : ''}>ขายเครดิต</option>
-                                <option value="ขายหน่วยรถเงินสด" ${data.department === 'ขายหน่วยรถเงินสด' ? 'selected' : ''}>ขายหน่วยรถเงินสด</option>
+                                <option value="หน่วยรถเงินสด" ${data.department === 'หน่วยรถเงินสด' ? 'selected' : ''}>หน่วยรถเงินสด</option>
+                                <option value="หน่วยขายเครดิต" ${data.department === 'หน่วยขายเครดิต' ? 'selected' : ''}>หน่วยขายเครดิต</option>
                             </select>
                         </div>
                     </div>
@@ -2415,8 +2451,7 @@
                 closeModal('masterModal');
                 
                 if(editTable === 'users') loadUsers();
-                if(editTable === 'teams') loadTeams();
-                if(editTable === 'vehicles') loadVehicles();
+                if(editTable === 'teams' || editTable === 'vehicles') loadMasterData();
             } catch(err) {
                 showToast(err.message, 'error');
             }
@@ -2427,6 +2462,7 @@
         function openTeamModal() { openMasterModal('teams'); }
         function openVehicleModal() { openMasterModal('vehicles'); }
         function editUser(id) { openMasterModal('users', id); }
+        function editTeam(id) { openMasterModal('teams', id); }
         function editVehicle(id) { openMasterModal('vehicles', id); }
         // ==========================================
         // 6. Export CSV
